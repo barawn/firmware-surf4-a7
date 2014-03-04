@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/cygwin/home/barawn/SURF4/SURF4_A7/working/wbc_intercon_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="wbc_intercon_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="9" />
+   <wvobject fp_name="group43" type="group">
+      <obj_property name="label">PCIC Bus</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_cyc_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_cyc_o</obj_property>
+         <obj_property name="ObjectShortName">pcic_cyc_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_stb_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_stb_o</obj_property>
+         <obj_property name="ObjectShortName">pcic_stb_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_we_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_we_o</obj_property>
+         <obj_property name="ObjectShortName">pcic_we_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_adr_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_adr_o[19:0]</obj_property>
+         <obj_property name="ObjectShortName">pcic_adr_o[19:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_dat_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_dat_o[31:0]</obj_property>
+         <obj_property name="ObjectShortName">pcic_dat_o[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_sel_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_sel_o[3:0]</obj_property>
+         <obj_property name="ObjectShortName">pcic_sel_o[3:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_dat_i" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_dat_i[31:0]</obj_property>
+         <obj_property name="ObjectShortName">pcic_dat_i[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_ack_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_ack_i</obj_property>
+         <obj_property name="ObjectShortName">pcic_ack_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_err_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_err_i</obj_property>
+         <obj_property name="ObjectShortName">pcic_err_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/pcic_rty_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">pcic_rty_i</obj_property>
+         <obj_property name="ObjectShortName">pcic_rty_i</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group44" type="group">
+      <obj_property name="label">TURFC Bus</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_cyc_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_cyc_o</obj_property>
+         <obj_property name="ObjectShortName">turfc_cyc_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_stb_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_stb_o</obj_property>
+         <obj_property name="ObjectShortName">turfc_stb_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_we_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_we_o</obj_property>
+         <obj_property name="ObjectShortName">turfc_we_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_adr_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_adr_o[19:0]</obj_property>
+         <obj_property name="ObjectShortName">turfc_adr_o[19:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_dat_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_dat_o[31:0]</obj_property>
+         <obj_property name="ObjectShortName">turfc_dat_o[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_sel_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_sel_o[3:0]</obj_property>
+         <obj_property name="ObjectShortName">turfc_sel_o[3:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_dat_i" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_dat_i[31:0]</obj_property>
+         <obj_property name="ObjectShortName">turfc_dat_i[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_ack_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_ack_i</obj_property>
+         <obj_property name="ObjectShortName">turfc_ack_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_err_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_err_i</obj_property>
+         <obj_property name="ObjectShortName">turfc_err_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/turfc_rty_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">turfc_rty_i</obj_property>
+         <obj_property name="ObjectShortName">turfc_rty_i</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group45" type="group">
+      <obj_property name="label">HKC Bus</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_cyc_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_cyc_o</obj_property>
+         <obj_property name="ObjectShortName">hkc_cyc_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_stb_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_stb_o</obj_property>
+         <obj_property name="ObjectShortName">hkc_stb_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_we_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_we_o</obj_property>
+         <obj_property name="ObjectShortName">hkc_we_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_adr_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_adr_o[19:0]</obj_property>
+         <obj_property name="ObjectShortName">hkc_adr_o[19:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_dat_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_dat_o[31:0]</obj_property>
+         <obj_property name="ObjectShortName">hkc_dat_o[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_sel_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_sel_o[3:0]</obj_property>
+         <obj_property name="ObjectShortName">hkc_sel_o[3:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_dat_i" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_dat_i[31:0]</obj_property>
+         <obj_property name="ObjectShortName">hkc_dat_i[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_ack_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_ack_i</obj_property>
+         <obj_property name="ObjectShortName">hkc_ack_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_err_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_err_i</obj_property>
+         <obj_property name="ObjectShortName">hkc_err_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/hkc_rty_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">hkc_rty_i</obj_property>
+         <obj_property name="ObjectShortName">hkc_rty_i</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group46" type="group">
+      <obj_property name="label">S4_ID_CTRL Bus</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_dat_i" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_dat_i[31:0]</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_dat_i[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_dat_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_dat_o[31:0]</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_dat_o[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_adr_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_adr_o[19:0]</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_adr_o[19:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_cyc_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_cyc_o</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_cyc_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_we_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_we_o</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_we_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_stb_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_stb_o</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_stb_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_ack_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_ack_i</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_ack_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_rty_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_rty_i</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_rty_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_err_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_err_i</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_err_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/wbc_intercon_tb/s4_id_ctrl_sel_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">s4_id_ctrl_sel_o[3:0]</obj_property>
+         <obj_property name="ObjectShortName">s4_id_ctrl_sel_o[3:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/wbc_intercon_tb/clk_i" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk_i</obj_property>
+      <obj_property name="ObjectShortName">clk_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/wbc_intercon_tb/rst_i" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst_i</obj_property>
+      <obj_property name="ObjectShortName">rst_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/wbc_intercon_tb/uut/pcic_gnt" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pcic_gnt</obj_property>
+      <obj_property name="ObjectShortName">pcic_gnt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/wbc_intercon_tb/uut/turfc_gnt" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">turfc_gnt</obj_property>
+      <obj_property name="ObjectShortName">turfc_gnt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/wbc_intercon_tb/uut/hkc_gnt" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">hkc_gnt</obj_property>
+      <obj_property name="ObjectShortName">hkc_gnt</obj_property>
+   </wvobject>
+</wave_config>
