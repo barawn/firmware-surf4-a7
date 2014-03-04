@@ -166,27 +166,36 @@
 // Connect a vectored WISHBONE bus at index 'n' prefixed by 'x'
 // to a set of slave ports prefixed 'y'.
 `define WBS_CONNECT_VECTOR(x, y, n)	\
-	.y``_dat_i(x``_dat_o),					\
-	.y``_dat_o(x``_dat_i),					\
-	.y``_adr_i(x``_adr_o),					\
-	.y``_cyc_i(x``_cyc_o),					\
-	.y``_stb_i(x``_stb_o),					\
-	.y``_we_i(x``_we_o),					\
-	.y``_ack_o(x``_ack_i),					\
-	.y``_rty_o(x``_rty_i),					\
-	.y``_err_o(x``_err_i),					\
-	.y``_sel_i(x``_sel_o)
+	.y``_dat_i(x``_dat_o[ n ]),					\
+	.y``_dat_o(x``_dat_i[ n ]),					\
+	.y``_adr_i(x``_adr_o[ n ]),					\
+	.y``_cyc_i(x``_cyc_o[ n ]),					\
+	.y``_stb_i(x``_stb_o[ n ]),					\
+	.y``_we_i(x``_we_o[ n ]),					\
+	.y``_ack_o(x``_ack_i[ n ]),					\
+	.y``_rty_o(x``_rty_i[ n ]),					\
+	.y``_err_o(x``_err_i[ n ]),					\
+	.y``_sel_i(x``_sel_o[ n ])
 
 // Connect a vectored WISHBONE bus at index 'n' prefixed by 'x'
 // to a set of master ports prefixed 'y'
 `define WBM_CONNECT_VECTOR(x, y, n)	\
-	.y``_dat_o(x``_dat_o),					\
-	.y``_dat_i(x``_dat_i),					\
-	.y``_adr_o(x``_adr_o),					\
-	.y``_cyc_o(x``_cyc_o),					\
-	.y``_stb_o(x``_stb_o),					\
-	.y``_we_o(x``_we_o),					\
-	.y``_ack_i(x``_ack_i),					\
-	.y``_rty_i(x``_rty_i),					\
-	.y``_err_i(x``_err_i),					\
-	.y``_sel_o(x``_sel_o)
+	.y``_dat_o(x``_dat_o[ n ]),					\
+	.y``_dat_i(x``_dat_i[ n ]),					\
+	.y``_adr_o(x``_adr_o[ n ]),					\
+	.y``_cyc_o(x``_cyc_o[ n ]),					\
+	.y``_stb_o(x``_stb_o[ n ]),					\
+	.y``_we_o(x``_we_o[ n ]),					\
+	.y``_ack_i(x``_ack_i[ n ]),					\
+	.y``_rty_i(x``_rty_i[ n ]),					\
+	.y``_err_i(x``_err_i[ n ]),					\
+	.y``_sel_o(x``_sel_o[ n ])
+
+// Kill a WISHBONE bus named x with data width y and addr width z and sel width w (set all signals to 0).
+`define WB_KILL(x, y, z, w) \
+	assign x``_cyc_o = 0;							\
+	assign x``_stb_o = 0;							\
+	assign x``_we_o = 0;								\
+	assign x``_dat_o = {y{1'b0}};					\
+	assign x``_adr_o = {z{1'b0}};					\
+	assign x``_sel_o = {w{1'b0}}

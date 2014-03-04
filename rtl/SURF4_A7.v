@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 `include "wishbone.vh"
+`include "pci.vh"
 
 module SURF4_A7(
 		//Local clocks
@@ -89,23 +90,24 @@ module SURF4_A7(
 		//PCI SIGNALS
 		// Directional.
 		input 	      PCI_CLK,
-		input 	      PCI_RST, 
-		input 	      PCI_IDSEL,
-		input 	      PCI_GNT_neg, 
-		output 	      PCI_REQ_neg,
+		inout 	      pci_rst, 
+		input 	      pci_idsel,
+		input 	      pci_gnt, 
+		output 	      pci_req,
 		// *Always* bidirectional. Shared bus.
-		inout [31:0]  PCI_AD,
-		inout 	      PCI_PERR_neg, 
-		inout 	      PCI_TRDY_neg, 
-		inout 	      PCI_DEVSEL_neg, 
-		inout 	      PCI_STOP_neg, 
+		inout [31:0]  	pci_ad,
+		inout 	      pci_perr, 
+		inout				pci_par,
+		inout 	      pci_trdy, 
+		inout 	      pci_devsel, 
+		inout 	      pci_stop, 
 		
-		inout [3:0]   PCI_C_BE,
-		inout 	      PCI_FRAME_neg, 
-		inout 	      PCI_IRDY_neg, 
+		inout [3:0]   	pci_cbe,
+		inout 	      pci_frame, 
+		inout 	      pci_irdy, 
 
-		inout 	      PCI_INTA_neg, 
-		inout 	      PCI_SERR_neg, 
+		inout 	      pci_inta, 
+		inout 	      pci_serr, 
 
 
 		//TURF interface - comments on directionality if not SURF outputs
@@ -140,7 +142,12 @@ module SURF4_A7(
 		// Local I2C bus, and monitoring path from
 		// microcontroller.
 		inout 	      UC_SCL, 
-		inout 	      UC_SDA
+		inout 	      UC_SDA,
+		
+		// SPI.
+		output			SPI_CS_neg,
+		output			SPI_D0_MOSI,
+		input 			SPI_D1_MISO
 	
 	 );
    
@@ -173,7 +180,8 @@ module SURF4_A7(
    //% System clock (100 MHz).
    wire 	    sys_clk;
    	
-   // pcic: PCI control master port WISHBONE bus.
+	// WISHBONE control bus. These are all merged into a common bus in the wbc_intercon module.
+	// pcic: PCI control master port WISHBONE bus.
    `WB_DEFINE( pcic, 32, 20, 4);
    // turfc: TURF control master port WISHBONE bus.
    `WB_DEFINE( turfc, 32, 20, 4);
@@ -183,12 +191,80 @@ module SURF4_A7(
    `WB_DEFINE( s4_id_ctrl, 32, 16, 4);
    // hksc: HK collector slave port WISHBONE bus.
    `WB_DEFINE( hksc, 32, 16, 4);
-   // i2c_rfp: The RFP<->I2C WISHBONE bus.
+  
+	// WISHBONE data bus. These aren't merged anywhere yet. Still figuring out best methods.
+	// pcid: PCI data slave port WISHBONE bus.
+	`WB_DEFINE( pcid, 32, 32, 4);
+	// turfd: TURF data slave port WISHBONE bus.
+	`WB_DEFINE( turfd, 32, 32, 4);
+	// Kill the PCID/TURFD busses. This just sets all the master signals to 0.
+	`WB_KILL( pcid );
+	`WB_KILL( turfd );
+
+	// WISHBONE I2C bus. These are merged in the i2c_x12_top intercon module.
+	// i2c_rfp: The RFP<->I2C WISHBONE bus.
    `WB_DEFINE( i2c_rfp, 8, 7, 1);
    // i2c_lab4: The LAB4<->I2C WISHBONE bus.
    `WB_DEFINE( i2c_lab4, 8, 7, 1);
 
 
+	`PCI_TRIS(pci_rst);
+	`PCI_TRIS(pci_inta);
+	`PCI_TRIS(pci_req);
+	`PCI_TRIS(pci_frame);
+	`PCI_TRIS(pci_irdy);
+	`PCI_TRIS(pci_devsel);
+	`PCI_TRIS(pci_trdy);
+	`PCI_TRIS(pci_stop);
+	`PCI_TRIS(pci_par);
+	`PCI_TRIS(pci_perr);
+	`PCI_TRIS(pci_serr);
+	`PCI_TRIS_VECTOR(pci_ad, 32);
+	`PCI_TRIS_VECTOR(pci_cbe, 4);
+
+	// PCI bridge.
+	pci_bridge32 u_pci(.pci_clk_i(clk_i),
+				`PCI_TRIS_CONNECT(pci_rst),
+				.pci_req_o(pci_req_o),
+				.pci_req_oe_o(pci_req_oe),
+				.pci_gnt_i(pci_gnt),
+				`PCI_TRIS_CONNECT(pci_inta),
+				`PCI_TRIS_CONNECT(pci_frame),
+				`PCI_TRIS_CONNECT(pci_irdy),
+				.pci_idsel_i(pci_idsel),
+				`PCI_TRIS_CONNECT(pci_devsel),
+				`PCI_TRIS_CONNECT(pci_trdy),
+				`PCI_TRIS_CONNECT(pci_stop),
+				`PCI_TRIS_CONNECT(pci_ad),
+				`PCI_TRIS_CONNECT(pci_cbe),
+				`PCI_TRIS_CONNECT(pci_par),
+				`PCI_TRIS_CONNECT(pci_perr),
+				.pci_serr_o(pci_serr_o),
+				.pci_serr_oe_o(pci_serr_oe),
+
+				.wb_clk_i(wb_clk),
+				.wb_rst_o(wb_rst_in),
+				.wb_rst_i(wb_rst_out),
+				.wb_int_o(wb_int_in),
+				.wb_int_i(wb_int_out),
+
+				.wbs_adr_i(wbs_adr),
+				.wbs_dat_i(wbs_dat_out),
+				.wbs_dat_o(wbs_dat_in),
+				.wbs_sel_i(wbs_sel),
+				.wbs_cyc_i(wbs_cyc),
+				.wbs_stb_i(wbs_stb),
+				.wbs_we_i(wbs_we),
+				.wbs_cti_i(wbs_cti),
+				.wbs_bte_i(wbs_bte),
+				.wbs_ack_o(wbs_ack),
+				.wbs_rty_o(wbs_rty),
+				.wbs_err_o(wbs_err),
+
+				`WBM_CONNECT(pcic, wbm),
+//				.wbm_cti_o(wbm_cti),
+//				.wbm_bte_o(wbm_bte)
+				);
    
    // WISHBONE Control bus interconnect. This is the first stupid version, which does not handle registered WISHBONE transfers,
    // and is just a shared bus interconnect.
@@ -225,12 +301,14 @@ module SURF4_A7(
 				 // Ext trig generation, in both domains.
 				 .ext_trig_o(global_ext_trig),
 				 .ext_trig_sysclk_o(global_ext_trig_sysclk),
+				 // Ext trig port
+				 .EXT_TRIG(EXT_TRIG),
 				 // PPS port
 				 .PPS(PPS),
 				 // SPI ports
 				 .MOSI(SPI_D0_MOSI),
 				 .MISO(SPI_D1_MISO),
-				 .CS_B(SPI_CS_B),
+				 .CS_B(SPI_CS_neg),
 				 // ICE40 ports
 				 .ICE40_RESET(ICE40_RESET),
 				 // LED ports

@@ -16,7 +16,7 @@
 // 0x0004: Firmware ID (standard board rev/day/month/major/minor/revision packing)
 // 0x0008: Interrupt service register.
 // 0x000C: Interrupt mask register.
-// 0x0010: PPS selection register
+// 0x0010: PPS selection register.
 // 0x0014: Reset register (iCE40/Global reset)
 // 0x0018: LED output/override register.
 // 0x001C: Clock selection register (FPGA_SST_SEL, LOCAL_OSC_EN, and clock detection).
@@ -36,41 +36,52 @@ module surf4_id_ctrl(
 		input clk_i,
 		input rst_i,
 		`WBS_NAMED_PORT(wb, 32, 16, 4),
-		input [30:0] interrupt_i, 
 		output pci_interrupt_o,
-		input [11:0] internal_led_i,
-		input ext_pps_i,
+		input [30:0] interrupt_i, 
+
 		output pps_o,
+		output pps_sysclk_o,
+		
+		output ext_trig_o,
+		output ext_trig_sysclk_o,
+		
+		input [11:0] internal_led_i,
+
+		output sys_clk_o,
+
+		// PPS.
+		input PPS,
+
+		// Ext trig.
+		input EXT_TRIG,
 		// SPI
 		output MOSI,
 		input MISO,
 		output CS_B,
 		output ICE40_RESET,
 
-		output [3:0] LED,
+		inout [3:0] LED,
 		output FP_LED,
 		input LOCAL_CLK,
 		output LOCAL_OSC_EN,
-		output FPGA_SST_SEL,
+		inout FPGA_SST_SEL,
 		input FPGA_SST,
-		output sys_clk_o
+		input FPGA_TURF_SST		
     );
 
 		parameter DEVICE = "S4A7";
 		parameter VERSION = 32'h00000000;
-		
+
+		reg wb_ack_mux;
 		reg [31:0] wb_data_out_mux;
-		reg [31:0] wb_data_out_internal = {32{1'b0}};
 		// Our internal space is 4 bits wide = 16 registers (5:2 only matter).
 		// The last 4 are really the SPI core, and the 2 before that are reserved.
 		wire [31:0] wishbone_registers[15:0];
-		
-		wire sel_int_sr_reg;
+
 		reg [31:0] int_sr_reg = {32{1'b0}};
 		reg [31:0] int_mask_reg = {32{1'b0}};
 		reg [31:0] pps_sel_reg = {32{1'b0}};
 		reg [31:0] reset_reg = {32{1'b0}};
-		wire sel_led_reg;
 		reg [31:0] led_reg = {32{1'b0}};
 		reg [31:0] clocksel_reg = {32{1'b0}};
 		reg [31:0] pllctrl_reg = {32{1'b0}};
@@ -88,13 +99,14 @@ module surf4_id_ctrl(
 		always @(*) begin
 			if (pll_drp_select) wb_data_out_mux <= pll_drp_dat_o;
 			else if (spi_select) wb_data_out_mux <= spi_dat_o;
-			else wb_data_out_mux <= wb_data_out_internal;
+			else wb_data_out_mux <= wishbone_registers[wb_adr_i[5:2]];
 		end
 		always @(*) begin
-			if (spi_select) wb_ack_o <= spi_ack_o;
-			else wb_ack_o <= internal_ack;
+			if (spi_select) wb_ack_mux <= spi_ack_o;
+			else wb_ack_mux <= internal_ack;
 		end
-		
+		assign wb_ack_o = wb_ack_mux;
+		assign wb_dat_o = wb_data_out_mux;
 		
 		// BASE needs to be defined to convert the base address into an index.
 		localparam BASEWIDTH = 4;
@@ -117,10 +129,10 @@ module surf4_id_ctrl(
 					assign wishbone_registers[ addr ] = x
 
 		`define SIGNALRESET(addr, x, range, resetval)																	\
-					always @(posedge wb_clk_i) begin																			\
+					always @(posedge clk_i) begin																			\
 						if (rst_i) x <= resetval;																				\
 						else if (wb_cyc_i && wb_stb_i && wb_we_i && (wb_adr_i[BASEWIDTH-1:0] == addr))		\
-							x <= dat_i range;																						\
+							x <= wb_dat_i range;																						\
 					end																												\
 					assign wishbone_registers[ addr ] range = x
 		`define WISHBONE_ADDRESS( addr, name, TYPE, par1, par2 )														\
@@ -168,7 +180,7 @@ module surf4_id_ctrl(
 		`WISHBONE_ADDRESS( 16'h003C, clocksel_reg, OUTPUT, [31:0], 0);
 		
 
-		simple_spi u_spi(.clk_i(clk_i),
+		simple_spi_top u_spi(.clk_i(clk_i),
 							  .rst_i(rst_i),
 							  .inta_o(spi_inta_o),
 							  .cyc_i(wb_cyc_i && spi_select),
@@ -192,15 +204,10 @@ module surf4_id_ctrl(
 									 .USRDONETS(1'b0));
 	
 		
-		assign FPGA_SST_SEL = clock_sel_reg[0];
-		assign LOCAL_OSC_EN = clock_sel_reg[1];
-		assign ICE40_RESET = reset_reg[0];
-		assign CS_B = !spiss_reg[0];		
 		// LED register:
 		// bits [27:16]: override internal LED values and replace with written values.
 		// bits 11:0: either current state of internal LEDs, or overridden values.
 		// bit 12: FP_LED
-		assign FP_LED = led_register[12];
 		
 		reg [3:0] counter = {4{1'b0}};
 		always @(posedge clk_i) begin
@@ -214,26 +221,43 @@ module surf4_id_ctrl(
 		always @(posedge clk_i) begin
 			case (counter)
 				// 0-5 are green, 6-11 are red.
-				0: if (led_register[0]) begin led_out <= 4'b0001; led_oen <= 4'b0110; end // 0-3
-				1: if (led_register[1]) begin led_out <= 4'b0010; led_oen <= 4'b0101; end // 1-3
-				2: if (led_register[2]) begin led_out <= 4'b0100; led_oen <= 4'b0011; end // 2-3
-				3: if (led_register[3]) begin led_out <= 4'b0001; led_oen <= 4'b1010; end // 0-2
-				4: if (led_register[4]) begin led_out <= 4'b0010; led_oen <= 4'b1001; end // 1-2
-				5: if (led_register[5]) begin led_out <= 4'b0001; led_oen <= 4'b1100; end // 0-1
-				6: if (led_register[6]) begin led_out <= 4'b1000; led_oen <= 4'b0110; end // 3-0
-				7: if (led_register[7]) begin led_out <= 4'b1000; led_oen <= 4'b0101; end // 3-1
-				8: if (led_register[8]) begin led_out <= 4'b1000; led_oen <= 4'b0011; end // 3-2
-				9: if (led_register[9]) begin led_out <= 4'b0100; led_oen <= 4'b1010; end // 2-0
-				10: if (led_register[10]) begin led_out <= 4'b0100; led_oen <= 4'b1001; end // 2-1
-				11: if (led_register[11]) begin led_out <= 4'b0010; led_oen <= 4'b1100; end // 1-0
+				0: if (led_reg[0]) begin led_out <= 4'b0001; led_oen <= 4'b0110; end // 0-3
+				1: if (led_reg[1]) begin led_out <= 4'b0010; led_oen <= 4'b0101; end // 1-3
+				2: if (led_reg[2]) begin led_out <= 4'b0100; led_oen <= 4'b0011; end // 2-3
+				3: if (led_reg[3]) begin led_out <= 4'b0001; led_oen <= 4'b1010; end // 0-2
+				4: if (led_reg[4]) begin led_out <= 4'b0010; led_oen <= 4'b1001; end // 1-2
+				5: if (led_reg[5]) begin led_out <= 4'b0001; led_oen <= 4'b1100; end // 0-1
+				6: if (led_reg[6]) begin led_out <= 4'b1000; led_oen <= 4'b0110; end // 3-0
+				7: if (led_reg[7]) begin led_out <= 4'b1000; led_oen <= 4'b0101; end // 3-1
+				8: if (led_reg[8]) begin led_out <= 4'b1000; led_oen <= 4'b0011; end // 3-2
+				9: if (led_reg[9]) begin led_out <= 4'b0100; led_oen <= 4'b1010; end // 2-0
+				10: if (led_reg[10]) begin led_out <= 4'b0100; led_oen <= 4'b1001; end // 2-1
+				11: if (led_reg[11]) begin led_out <= 4'b0010; led_oen <= 4'b1100; end // 1-0
 				default: led_oen <= 4'b1111;
 			endcase
 		end
+
+		assign FPGA_SST_SEL = (clocksel_reg[1]) ? clocksel_reg[0] : 1'bZ;
+		assign LOCAL_OSC_EN = clocksel_reg[2];
+		assign ICE40_RESET = reset_reg[0];
+		assign CS_B = !spiss_reg[0];		
+
 		assign LED[0] = (led_oen[0]) ? 1'bZ : led_out[0];
 		assign LED[1] = (led_oen[1]) ? 1'bZ : led_out[1];
 		assign LED[2] = (led_oen[2]) ? 1'bZ : led_out[2];
 		assign LED[3] = (led_oen[3]) ? 1'bZ : led_out[3];
 			
-		assign pci_interrupt_o = (int_sr_reg & ~int_mask_reg);
+		assign FP_LED = led_reg[12];
+
+		assign pci_interrupt_o = |(int_sr_reg & ~int_mask_reg);
+
+		// To Do:
+		// -- PPS generation/selection/control.
+		// -- Ext trig generation/selection/control.
+		// -- Sysclk generation.
 		assign pps_o = 0;
+		assign pps_sysclk_o = 0;
+		assign ext_trig_o = 0;
+		assign ext_trig_sysclk_o = 0;
+		assign sysclk_o = 0;
 endmodule
