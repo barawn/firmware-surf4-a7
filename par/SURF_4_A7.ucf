@@ -1,0 +1,389 @@
+# Notes:
+# All differential pair inputs require DIFF_TERM = TRUE.
+#CLOCKS and CLOCKENs
+NET "LOCAL_CLK" LOC = "D20";
+NET "LOCAL_OSC_EN" LOC = "E20";
+
+
+#TURF_derived clock for LABs
+NET "FPGA_TURF_SST_N" LOC = "AB20" | IOSTANDARD = LVDS_25   | diff_term=true;
+NET "FPGA_TURF_SST_P" LOC = "AA20" | IOSTANDARD = LVDS_25   | diff_term=true;
+
+
+# External trigger - externally 50 ohm terminated - 2.5V bank
+# Actually 100 ohm terminated.
+NET "EXT_TRIG" LOC = "G7";
+
+#Front Panel LED
+NET "FP_LED" LOC = "J4";
+
+# SPI flash
+NET "SPI_CS_neg" LOC = "P18";
+NET "SPI_D0_MOSI" LOC = "R14";
+NET "SPI_D1_MISO" LOC = "R15";
+
+# FPGA_SST_P/FPGA_SST_N are outputs from the FPGA to the
+# CDCLVD1212 clock fanout, for use when a TURF is not
+# present (or some other problem). To use this clock at the
+# LAB4s, FPGA_SST_SEL must be 0.
+NET "FPGA_SST_N" LOC = "AC21" | IOSTANDARD = LVDS_25   ;
+NET "FPGA_SST_P" LOC = "AB21" | IOSTANDARD = LVDS_25   ;
+# If 1: LAB4 SST is TURF_SST_P/N.
+# If 0: LAB4 SST is FPGA_SST_P/N.
+# If Hi-Z: No LAB4 SST. Start up in Hi-Z!
+NET "FPGA_SST_SEL" LOC = "R18";
+
+
+#ICE40 reset
+NET "ICE40_RESET" LOC = "N7";
+
+#LAB4 signals - clk, RX and TX interface the iCE, SCL/SDA control the DACs (RFP, LAB4 and MONTIMING comparator), WCLK, WREN, WRx, and TIMING directly to/from LAB4Bs
+
+# These are named A-L on the schematic. Direct mapping (A->0, B->1, ... L->11).
+NET "L4_CLK_N<0>" LOC = "P1" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<0>" LOC = "R1" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<1>" LOC = "H1" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<1>" LOC = "H2" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<2>" LOC = "B2" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<2>" LOC = "C2" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<3>" LOC = "A5" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<3>" LOC = "B5" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<4>" LOC = "A20" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<4>" LOC = "B20" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<5>" LOC = "B26" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<5>" LOC = "C26" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<6>" LOC = "F25" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<6>" LOC = "G25" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<7>" LOC = "J26" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<7>" LOC = "J25" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<8>" LOC = "M26" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<8>" LOC = "N26" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<9>" LOC = "T25" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<9>" LOC = "T24" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<10>" LOC = "Y26" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<10>" LOC = "W25" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_N<11>" LOC = "AC24" | IOSTANDARD = LVDS_25   ;
+NET "L4_CLK_P<11>" LOC = "AB24" | IOSTANDARD = LVDS_25   ;
+NET "L4_RX_N<0>" LOC = "U1" | IOSTANDARD = LVDS_25  | diff_term=true ; 
+NET "L4_RX_P<0>" LOC = "U2" | IOSTANDARD = LVDS_25  | diff_term=true ;
+NET "L4_RX_N<1>" LOC = "K2" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<1>" LOC = "L3" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<2>" LOC = "D1" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<2>" LOC = "E1" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<3>" LOC = "A2" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<3>" LOC = "A3" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<4>" LOC = "A18" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<4>" LOC = "A17" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<5>" LOC = "A24" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<5>" LOC = "A23" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<6>" LOC = "D25" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<6>" LOC = "E25" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<7>" LOC = "G26" | IOSTANDARD = LVDS_25 | diff_term=true   ;
+NET "L4_RX_P<7>" LOC = "H26" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<8>" LOC = "L25" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<8>" LOC = "L24" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<9>" LOC = "P25" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<9>" LOC = "R25" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<10>" LOC = "U26" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<10>" LOC = "U25" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_N<11>" LOC = "AA25" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_RX_P<11>" LOC = "Y25" | IOSTANDARD = LVDS_25  | diff_term=true  ;
+NET "L4_TX_N<0>" LOC = "R2" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<0>" LOC = "T2" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<1>" LOC = "J1" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<1>" LOC = "K1" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<2>" LOC = "B1" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<2>" LOC = "C1" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<3>" LOC = "A4" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<3>" LOC = "B4" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<4>" LOC = "A19" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<4>" LOC = "B19" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<5>" LOC = "A25" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<5>" LOC = "B25" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<6>" LOC = "D26" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<6>" LOC = "E26" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<7>" LOC = "H24" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<7>" LOC = "J24" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<8>" LOC = "M25" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<8>" LOC = "M24" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<9>" LOC = "P26" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<9>" LOC = "R26" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<10>" LOC = "W26" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<10>" LOC = "V26" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_N<11>" LOC = "AB25" | IOSTANDARD = LVDS_25   ;
+NET "L4_TX_P<11>" LOC = "AA24" | IOSTANDARD = LVDS_25   ;
+
+
+NET "L4_SCL<0>" LOC = "N1";
+NET "L4_SDA<0>" LOC = "N2";
+NET "L4_SCL<1>" LOC = "J3";
+NET "L4_SDA<1>" LOC = "K3";
+NET "L4_SCL<2>" LOC = "H4";
+NET "L4_SDA<2>" LOC = "G4";
+NET "L4_SCL<3>" LOC = "H7";
+NET "L4_SDA<3>" LOC = "H6";
+NET "L4_SCL<4>" LOC = "H15";
+NET "L4_SDA<4>" LOC = "H14";
+NET "L4_SCL<5>" LOC = "B24";
+NET "L4_SDA<5>" LOC = "C24";
+NET "L4_SCL<6>" LOC = "J14";
+NET "L4_SDA<6>" LOC = "J15";
+NET "L4_SCL<7>" LOC = "H18";
+NET "L4_SDA<7>" LOC = "J18";
+NET "L4_SCL<8>" LOC = "K26";
+NET "L4_SDA<8>" LOC = "K25";
+NET "L4_SCL<9>" LOC = "P19";
+NET "L4_SDA<9>" LOC = "N19";
+NET "L4_SCL<10>" LOC = "V21";
+NET "L4_SDA<10>" LOC = "W23";
+NET "L4_SCL<11>" LOC = "AB26";
+NET "L4_SDA<11>" LOC = "AC26";
+
+
+NET "L4_TIMING_N<0>" LOC = "U5" | IOSTANDARD = LVDS_25   | diff_term=true ;
+NET "L4_TIMING_P<0>" LOC = "U6" | IOSTANDARD = LVDS_25   | diff_term=true ;
+NET "L4_TIMING_N<1>" LOC = "N4" | IOSTANDARD = LVDS_25   | diff_term=true ;
+NET "L4_TIMING_P<1>" LOC = "P4" | IOSTANDARD = LVDS_25   | diff_term=true ;
+NET "L4_TIMING_N<2>" LOC = "G1" | IOSTANDARD = LVDS_25   | diff_term=true ;
+NET "L4_TIMING_P<2>" LOC = "G2" | IOSTANDARD = LVDS_25   | diff_term=true ;
+NET "L4_TIMING_N<3>" LOC = "C4" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<3>" LOC = "D4" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_N<4>" LOC = "F15" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<4>" LOC = "G15" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_N<5>" LOC = "C19" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<5>" LOC = "D19" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_N<6>" LOC = "F22" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<6>" LOC = "G22" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_N<7>" LOC = "H23" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<7>" LOC = "J23" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_N<8>" LOC = "L20" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<8>" LOC = "M20" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_N<9>" LOC = "P24" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<9>" LOC = "P23" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_N<10>" LOC = "W24" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<10>" LOC = "V24" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_N<11>" LOC = "Y21" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+NET "L4_TIMING_P<11>" LOC = "W21" | IOSTANDARD = LVDS_25   | diff_term=true  ;
+
+NET "L4_WCLK_N<0>" LOC = "T3" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<0>" LOC = "T4" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<1>" LOC = "L2" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<1>" LOC = "M2" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<2>" LOC = "E2" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<2>" LOC = "F2" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<3>" LOC = "D5" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<3>" LOC = "E5" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<4>" LOC = "B17" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<4>" LOC = "C17" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<5>" LOC = "A22" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<5>" LOC = "B22" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<6>" LOC = "E23" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<6>" LOC = "F23" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<7>" LOC = "K23" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<7>" LOC = "K22" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<8>" LOC = "L23" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<8>" LOC = "L22" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<9>" LOC = "P21" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<9>" LOC = "P20" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<10>" LOC = "V22" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<10>" LOC = "U22" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_N<11>" LOC = "Y23" | IOSTANDARD = LVDS_25   ;
+NET "L4_WCLK_P<11>" LOC = "Y22" | IOSTANDARD = LVDS_25   ;
+
+NET "L4A_WR_EN" LOC = "T5";
+NET "L4A_WR<0>" LOC = "R6";
+NET "L4A_WR<1>" LOC = "T7";
+NET "L4A_WR<2>" LOC = "R7";
+NET "L4A_WR<3>" LOC = "T8";
+NET "L4A_WR<4>" LOC = "R8";
+
+NET "L4B_WR_EN" LOC = "M7";
+NET "L4B_WR<0>" LOC = "L5";
+NET "L4B_WR<1>" LOC = "M6";
+NET "L4B_WR<2>" LOC = "K5";
+NET "L4B_WR<3>" LOC = "M5";
+NET "L4B_WR<4>" LOC = "L7";
+NET "L4C_WR_EN" LOC = "H3";
+NET "L4C_WR<0>" LOC = "F4";
+NET "L4C_WR<1>" LOC = "F3";
+NET "L4C_WR<2>" LOC = "E3";
+NET "L4C_WR<3>" LOC = "D3";
+NET "L4C_WR<4>" LOC = "C3";
+NET "L4D_WR_EN" LOC = "D6";
+NET "L4D_WR<0>" LOC = "E6";
+NET "L4D_WR<1>" LOC = "F5";
+NET "L4D_WR<2>" LOC = "G6";
+NET "L4D_WR<3>" LOC = "G5";
+NET "L4D_WR<4>" LOC = "F7";
+NET "L4E_WR_EN" LOC = "E16";
+NET "L4E_WR<0>" LOC = "E17";
+NET "L4E_WR<1>" LOC = "D16";
+NET "L4E_WR<2>" LOC = "D18";
+NET "L4E_WR<3>" LOC = "F17";
+NET "L4E_WR<4>" LOC = "C18";
+NET "L4F_WR_EN" LOC = "E21";
+NET "L4F_WR<0>" LOC = "C21";
+NET "L4F_WR<1>" LOC = "D21";
+NET "L4F_WR<2>" LOC = "C22";
+NET "L4F_WR<3>" LOC = "B21";
+NET "L4F_WR<4>" LOC = "C23";
+NET "L4G_WR_EN" LOC = "G21";
+NET "L4G_WR<0>" LOC = "F24";
+NET "L4G_WR<1>" LOC = "G20";
+NET "L4G_WR<2>" LOC = "H21";
+NET "L4G_WR<3>" LOC = "G24";
+NET "L4G_WR<4>" LOC = "H22";
+NET "L4H_WR_EN" LOC = "H19";
+NET "L4H_WR<0>" LOC = "J21";
+NET "L4H_WR<1>" LOC = "J19";
+NET "L4H_WR<2>" LOC = "K20";
+NET "L4H_WR<3>" LOC = "J20";
+NET "L4H_WR<4>" LOC = "K21";
+NET "L4I_WR_EN" LOC = "M21";
+NET "L4I_WR<0>" LOC = "N23";
+NET "L4I_WR<1>" LOC = "M22";
+NET "L4I_WR<2>" LOC = "N22";
+NET "L4I_WR<3>" LOC = "N21";
+NET "L4I_WR<4>" LOC = "N24";
+NET "L4J_WR_EN" LOC = "R20";
+NET "L4J_WR<0>" LOC = "R23";
+NET "L4J_WR<1>" LOC = "R22";
+NET "L4J_WR<2>" LOC = "T22";
+NET "L4J_WR<3>" LOC = "T23";
+NET "L4J_WR<4>" LOC = "R21";
+NET "L4K_WR_EN" LOC = "T19";
+NET "L4K_WR<0>" LOC = "U21";
+NET "L4K_WR<1>" LOC = "U20";
+NET "L4K_WR<2>" LOC = "U24";
+NET "L4K_WR<3>" LOC = "T20";
+NET "L4K_WR<4>" LOC = "V23";
+NET "L4L_WR_EN" LOC = "AA23";
+NET "L4L_WR<0>" LOC = "Y20";
+NET "L4L_WR<1>" LOC = "W20";
+NET "L4L_WR<2>" LOC = "V19";
+NET "L4L_WR<3>" LOC = "AA22";
+NET "L4L_WR<4>" LOC = "W19";
+
+#LEDs. Bidirs.
+NET "LED<0>" LOC = "E22";
+NET "LED<1>" LOC = "F20";
+NET "LED<2>" LOC = "G19";
+NET "LED<3>" LOC = "F19";
+
+
+#MONITORING PINS
+NET "MON<0>" LOC = "G17";
+NET "MON<1>" LOC = "E18";
+NET "MON<2>" LOC = "H17";
+NET "MON<3>" LOC = "H16";
+NET "MON<4>" LOC = "G16";
+
+#PCI SIGNALS
+NET "pci_ad<0>" LOC = "AE5" | IOSTANDARD = PCI33_3;
+NET "pci_ad<1>" LOC = "AD5" | IOSTANDARD = PCI33_3;
+NET "pci_ad<10>" LOC = "Y6" | IOSTANDARD = PCI33_3;
+NET "pci_ad<11>" LOC = "AC6" | IOSTANDARD = PCI33_3;
+NET "pci_ad<12>" LOC = "AB6" | IOSTANDARD = PCI33_3;
+NET "pci_ad<13>" LOC = "Y5" | IOSTANDARD = PCI33_3;
+NET "pci_ad<14>" LOC = "AA5" | IOSTANDARD = PCI33_3;
+NET "pci_ad<15>" LOC = "W6" | IOSTANDARD = PCI33_3;
+NET "pci_ad<16>" LOC = "V6" | IOSTANDARD = PCI33_3;
+NET "pci_ad<17>" LOC = "V7" | IOSTANDARD = PCI33_3;
+NET "pci_ad<18>" LOC = "W4" | IOSTANDARD = PCI33_3;
+NET "pci_ad<19>" LOC = "AC3" | IOSTANDARD = PCI33_3;
+NET "pci_ad<2>" LOC = "AD4" | IOSTANDARD = PCI33_3;
+NET "pci_ad<20>" LOC = "AD1" | IOSTANDARD = PCI33_3;
+NET "pci_ad<21>" LOC = "U7" | IOSTANDARD = PCI33_3;
+NET "pci_ad<22>" LOC = "AB1" | IOSTANDARD = PCI33_3;
+NET "pci_ad<23>" LOC = "AB2" | IOSTANDARD = PCI33_3;
+NET "pci_ad<24>" LOC = "Y3" | IOSTANDARD = PCI33_3;
+NET "pci_ad<25>" LOC = "AA2" | IOSTANDARD = PCI33_3;
+NET "pci_ad<26>" LOC = "AA3" | IOSTANDARD = PCI33_3;
+NET "pci_ad<27>" LOC = "W1" | IOSTANDARD = PCI33_3;
+NET "pci_ad<28>" LOC = "W3" | IOSTANDARD = PCI33_3;
+NET "pci_ad<29>" LOC = "Y1" | IOSTANDARD = PCI33_3;
+NET "pci_ad<3>" LOC = "AC4" | IOSTANDARD = PCI33_3;
+NET "pci_ad<30>" LOC = "Y2" | IOSTANDARD = PCI33_3;
+NET "pci_ad<31>" LOC = "V3" | IOSTANDARD = PCI33_3;
+NET "pci_ad<4>" LOC = "AF5" | IOSTANDARD = PCI33_3;
+NET "pci_ad<5>" LOC = "AA8" | IOSTANDARD = PCI33_3;
+NET "pci_ad<6>" LOC = "AD3" | IOSTANDARD = PCI33_3;
+NET "pci_ad<7>" LOC = "AF4" | IOSTANDARD = PCI33_3;
+NET "pci_ad<8>" LOC = "AA7" | IOSTANDARD = PCI33_3;
+NET "pci_ad<9>" LOC = "Y8" | IOSTANDARD = PCI33_3;
+NET "pci_cbe<0>" LOC = "Y7" | IOSTANDARD = PCI33_3;
+NET "pci_cbe<1>" LOC = "AE3" | IOSTANDARD = PCI33_3;
+NET "pci_cbe<2>" LOC = "V4" | IOSTANDARD = PCI33_3;
+NET "pci_cbe<3>" LOC = "AC2" | IOSTANDARD = PCI33_3;
+NET "PCI_CLK" LOC = "AA4" | IOSTANDARD = PCI33_3;
+NET "pci_devsel" LOC = "AF2" | IOSTANDARD = PCI33_3;
+NET "pci_frame" LOC = "W8" | IOSTANDARD = PCI33_3;
+NET "pci_gnt" LOC = "AB5" | IOSTANDARD = PCI33_3;
+NET "pci_idsel" LOC = "AC1" | IOSTANDARD = PCI33_3;
+NET "pci_inta" LOC = "V1" | IOSTANDARD = PCI33_3;
+NET "pci_irdy" LOC = "W5" | IOSTANDARD = PCI33_3;
+NET "pci_par" LOC = "AF3" | IOSTANDARD = PCI33_3;
+NET "pci_perr" LOC = "AE2" | IOSTANDARD = PCI33_3;
+NET "pci_req" LOC = "V9" | IOSTANDARD = PCI33_3;
+NET "pci_rst" LOC = "V2" | IOSTANDARD = PCI33_3;
+NET "pci_serr" LOC = "AB4" | IOSTANDARD = PCI33_3;
+NET "pci_stop" LOC = "AE1" | IOSTANDARD = PCI33_3;
+NET "pci_trdy" LOC = "V8" | IOSTANDARD = PCI33_3;
+
+
+# TD_N[7:0] are transmitting.
+NET "TD_N<0>" LOC = "AE21" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<1>" LOC = "AF22" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<2>" LOC = "AF23" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<3>" LOC = "AC23" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<4>" LOC = "AD24" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<5>" LOC = "AF25" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<6>" LOC = "AE26" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<7>" LOC = "AD26" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<0>" LOC = "AD21" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<1>" LOC = "AE22" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<2>" LOC = "AE23" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<3>" LOC = "AC22" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<4>" LOC = "AD23" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<5>" LOC = "AF24" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<6>" LOC = "AE25" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<7>" LOC = "AD25" | IOSTANDARD = LVDS_25  ;
+# Source-synchronous clock for TD_P/N[7:0];
+NET "SCLK_N" LOC = "AF20"  | IOSTANDARD = LVDS_25;
+NET "SCLK_P" LOC = "AF19"  | IOSTANDARD = LVDS_25;
+
+# PPS inputs.
+NET "PPS_N" LOC = "AE20"; 
+NET "PPS_P" LOC = "AD20";
+# Buffer hold. Note that this is not a digitize request, which
+# comes in over the data bus.
+NET "HOLD<0>" LOC = "AA18"; 
+NET "HOLD<1>" LOC = "Y18";
+NET "HOLD<2>" LOC = "Y17";
+NET "HOLD<3>" LOC = "AA17";
+
+# TCLK_P/N, and SREQ/TREQ 'somehow' become the TURF-to-SURF control data path.
+# Probably TCLK_P/N will be a bus clock, and SREQ/TREQ will be single ended
+# serial datapaths. 
+NET "TCLK_N" LOC = "AD19"  | IOSTANDARD = LVDS_25   | diff_term=true; 
+NET "TCLK_P" LOC = "AC19"  | IOSTANDARD = LVDS_25   | diff_term=true; 
+NET "SREQ_neg" LOC = "AA19"; #from TURF
+NET "TREQ_neg" LOC = "AB19"; #from TURF
+
+# Leave off the MGT transceivers for now.
+#NET "TMGT_CLK_N" LOC = "AB11" | IOSTANDARD = LVDS_25   | diff_term=true;
+#NET "TMGT_CLK_P" LOC = "AA11" | IOSTANDARD = LVDS_25   | diff_term=true;
+#NET "TMGT_TX_N" LOC = "AF9" | IOSTANDARD = LVDS_25  ; 
+#NET "TMGT_TX_P" LOC = "AE9" | IOSTANDARD = LVDS_25  ; 
+#NET "TMGT_RX_N" LOC = "AF13" | IOSTANDARD = LVDS_25  ; | diff_term=true;
+#NET "TMGT_RX_P" LOC = "AE13" | IOSTANDARD = LVDS_25  ; | diff_term=true;
+# If you uncomment this, it won't work, which is good, as I don't know yet.
+#NET "TMGT_CLK_N" PERIOD = XXX ns;
+
+NET "UC_SCL" LOC = "AD18";
+NET "UC_SDA" LOC = "AE18";
+
+NET "PCI_CLK" PERIOD = 30.303 ns; # PCI_CLK - f=33MHz
+NET "LOCAL_CLK"  PERIOD = 40.0 ns; # Local clock - f=25MHz
+NET "FPGA_TURF_SST_N"  PERIOD = 40.0 ns; # Clock for LABs - from TURF - f=25MHz
+

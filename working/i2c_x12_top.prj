@@ -1,0 +1,4 @@
+verilog work "../rtl/opencores_i2c/i2c_master_bit_ctrl.v"
+verilog work "../rtl/opencores_i2c/i2c_master_byte_ctrl.v"
+verilog work "../rtl/opencores_i2c/i2c_master_top.v"
+verilog work "../rtl/i2c_x12_top.v"

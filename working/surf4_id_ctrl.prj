@@ -1,0 +1,3 @@
+verilog work "../rtl/opencores_simple_spi/fifo4.v"
+verilog work "../rtl/opencores_simple_spi/simple_spi_top.v"
+verilog work "../rtl/surf4_id_ctrl.v"
