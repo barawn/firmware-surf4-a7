@@ -248,20 +248,8 @@ module SURF4_A7(
 				.wb_int_o(wb_int_in),
 				.wb_int_i(wb_int_out),
 
-				.wbs_adr_i(wbs_adr),
-				.wbs_dat_i(wbs_dat_out),
-				.wbs_dat_o(wbs_dat_in),
-				.wbs_sel_i(wbs_sel),
-				.wbs_cyc_i(wbs_cyc),
-				.wbs_stb_i(wbs_stb),
-				.wbs_we_i(wbs_we),
-				.wbs_cti_i(wbs_cti),
-				.wbs_bte_i(wbs_bte),
-				.wbs_ack_o(wbs_ack),
-				.wbs_rty_o(wbs_rty),
-				.wbs_err_o(wbs_err),
-
-				`WBM_CONNECT(pcic, wbm)
+				`WBM_CONNECT(pcic, wbm),
+				`WBS_CONNECT(pcid, wbs)
 //				.wbm_cti_o(wbm_cti),
 //				.wbm_bte_o(wbm_bte)
 				);
