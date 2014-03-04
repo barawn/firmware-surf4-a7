@@ -198,8 +198,8 @@ module SURF4_A7(
 	// turfd: TURF data slave port WISHBONE bus.
 	`WB_DEFINE( turfd, 32, 32, 4);
 	// Kill the PCID/TURFD busses. This just sets all the master signals to 0.
-	`WB_KILL( pcid );
-	`WB_KILL( turfd );
+	`WB_KILL( pcid , 32, 32, 4);
+	`WB_KILL( turfd , 32, 32, 4);
 
 	// WISHBONE I2C bus. These are merged in the i2c_x12_top intercon module.
 	// i2c_rfp: The RFP<->I2C WISHBONE bus.
@@ -261,7 +261,7 @@ module SURF4_A7(
 				.wbs_rty_o(wbs_rty),
 				.wbs_err_o(wbs_err),
 
-				`WBM_CONNECT(pcic, wbm),
+				`WBM_CONNECT(pcic, wbm)
 //				.wbm_cti_o(wbm_cti),
 //				.wbm_bte_o(wbm_bte)
 				);
