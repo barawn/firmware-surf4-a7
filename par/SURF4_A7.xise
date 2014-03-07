@@ -9,10 +9,10 @@
     <!-- along with the project source files, is sufficient to open and    -->
     <!-- implement in ISE Project Navigator.                               -->
     <!--                                                                   -->
-    <!-- Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved. -->
+    <!-- Copyright (c) 1995-2012 Xilinx, Inc.  All rights reserved. -->
   </header>
 
-  <version xil_pn:ise_version="14.7" xil_pn:schema_version="2"/>
+  <version xil_pn:ise_version="14.4" xil_pn:schema_version="2"/>
 
   <files>
     <file xil_pn:name="../rtl/SURF4_A7.v" xil_pn:type="FILE_VERILOG">
@@ -328,13 +328,13 @@
     <!-- project is analyzed based on files automatically identified as       -->
     <!-- include files.                                                       -->
     <file xil_pn:name="../rtl/wishbone.vh" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/pci.vh" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_i2c/timescale.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_i2c/i2c_master_defines.v" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/pci.vh" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/opencores_pci/bus_commands.v" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/opencores_pci/timescale.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_pci/pci_constants.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_pci/pci_user_constants.v" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/opencores_pci/timescale.v" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/opencores_pci/bus_commands.v" xil_pn:type="FILE_VERILOG"/>
   </autoManagedFiles>
 
 </project>
