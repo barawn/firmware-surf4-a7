@@ -147,8 +147,13 @@ module SURF4_A7(
 		// SPI.
 		output			SPI_CS_neg,
 		output			SPI_D0_MOSI,
-		input 			SPI_D1_MISO
-	
+		input 			SPI_D1_MISO,
+		
+		// Analog inputs
+		input				MGT1V_P,
+		input				MGT1V_N,
+		input				MGT1P2_P,
+		input				MGT1P2_N	
 	 );
    
    // Internally there are three main busses: the 'control' WISHBONE bus, which has 3 masters and 4 slaves,
@@ -319,10 +324,14 @@ module SURF4_A7(
    surf4_hk_collector u_hk_collector(.wbc_clk_i(wbc_clk),.wbc_rst_i(wbc_rst),
 				     `WBS_CONNECT(hksc, wbsc),
 				     `WBM_CONNECT(hkmc, wbmc),
-				     .pps_i(global_pps));
+				     .pps_i(global_pps),
+					  .MGT1V_P(MGT1V_P),
+					  .MGT1V_N(MGT1V_N),
+					  .MGT1P2_P(MGT1P2_P),
+					  .MGT1P2_N(MGT1P2_N));
    
    // RFP module. This handles reading out and control over the RF power section.
-   // This has two WISHBONE ports: a slave control, and a master i2c. We only implement 1 of the 2 now (no WISHBONE I2C bus yet).
+   // This has two WISHBONE ports: a slave control, and a master i2c.
    surf4_rfp u_rfp(.wbc_clk_i(wbc_clk),.wbc_rst_i(wbc_rst),
 		   `WBS_CONNECT(rfp, wbc),
 		   `WBM_CONNECT(i2c_rfp, i2c),
