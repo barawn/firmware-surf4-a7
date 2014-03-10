@@ -196,6 +196,10 @@ module SURF4_A7(
    `WB_DEFINE( s4_id_ctrl, 32, 16, 4);
    // hksc: HK collector slave port WISHBONE bus.
    `WB_DEFINE( hksc, 32, 16, 4);
+	// lab4: LAB4 slave port WISHBONE bus.
+	`WB_DEFINE( lab4, 32, 19, 4);
+	// RFP: RFP slave port WISHBONE bus.
+	`WB_DEFINE( rfp, 32, 19, 4);
   
 	// WISHBONE data bus. These aren't merged anywhere yet. Still figuring out best methods.
 	// pcid: PCI data slave port WISHBONE bus.

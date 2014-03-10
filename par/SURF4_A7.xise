@@ -288,6 +288,25 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="84"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="84"/>
     </file>
+    <file xil_pn:name="../rtl/surf4_rfp.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="85"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="85"/>
+    </file>
+    <file xil_pn:name="ipcore_dir/rfp_ram.xco" xil_pn:type="FILE_COREGEN">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="86"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="86"/>
+    </file>
+    <file xil_pn:name="../rtl/kcpsm6.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="93"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="93"/>
+    </file>
+    <file xil_pn:name="../src/rfp_dummy.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="94"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="94"/>
+    </file>
+    <file xil_pn:name="ipcore_dir/rfp_ram.xise" xil_pn:type="FILE_COREGENISE">
+      <association xil_pn:name="Implementation" xil_pn:seqID="87"/>
+    </file>
   </files>
 
   <properties>
@@ -332,13 +351,13 @@
     <!-- project is analyzed based on files automatically identified as       -->
     <!-- include files.                                                       -->
     <file xil_pn:name="../rtl/wishbone.vh" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/pci.vh" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_i2c/timescale.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_i2c/i2c_master_defines.v" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/pci.vh" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/opencores_pci/bus_commands.v" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/opencores_pci/timescale.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_pci/pci_constants.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_pci/pci_user_constants.v" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/opencores_pci/timescale.v" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/opencores_pci/bus_commands.v" xil_pn:type="FILE_VERILOG"/>
   </autoManagedFiles>
 
 </project>
