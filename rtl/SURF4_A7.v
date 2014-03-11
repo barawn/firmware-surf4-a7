@@ -184,7 +184,9 @@ module SURF4_A7(
    wire 	    sst_clock;
    //% System clock (100 MHz).
    wire 	    sys_clk;
-   	
+   //% WCLK enable
+	wire [11:0] wclk_en;
+	
 	// WISHBONE control bus. These are all merged into a common bus in the wbc_intercon module.
 	// pcic: PCI control master port WISHBONE bus.
    `WB_DEFINE( pcic, 32, 20, 4);
@@ -298,6 +300,8 @@ module SURF4_A7(
 				 // Ext trig generation, in both domains.
 				 .ext_trig_o(global_ext_trig),
 				 .ext_trig_sysclk_o(global_ext_trig_sysclk),
+				 // WCLK control
+				 .wclk_en_i(wclk_en),
 				 // Ext trig port
 				 .EXT_TRIG(EXT_TRIG),
 				 // PPS port
@@ -316,7 +320,10 @@ module SURF4_A7(
 				 .LOCAL_OSC_EN(LOCAL_OSC_EN),
 				 .FPGA_SST_SEL(FPGA_SST_SEL),
 				 .FPGA_SST(FPGA_SST),
-				 .FPGA_TURF_SST(FPGA_TURF_SST));
+				 .FPGA_TURF_SST(FPGA_TURF_SST),
+				 // WCLK
+				 .L4_WCLK_P(L4_WCLK_P),
+				 .L4_WCLK_N(L4_WCLK_N));
    
    // HK Collector. This contains internal sensors (through the XADC block), a few other statistics
    // (clock frequency), and it also handles reading out the HK data from the LAB4s and RFPs, packaging it up,
@@ -351,14 +358,13 @@ module SURF4_A7(
 		   .sys_clk_i(sys_clk),
 		   .pps_i(global_pps),
 		   .pps_sysclk_i(global_pps_sysclk),
+			.wclk_en_o(wclk_en),
 		   // ICE40 connections.
 		   .L4_RX(L4_RX),
 		   .L4_TX(L4_TX),
 		   .L4_CLK(L4_CLK),
 		   // MONTIMING inputs.
 		   .L4_TIMING(L4_TIMING),
-		   // WCLK outputs.
-		   .L4_WCLK(L4_WCLK),
 		   // Write port connections.
 		   .L4A_WR_EN(L4A_WR_EN),
 		   .L4A_WR(L4A_WR),

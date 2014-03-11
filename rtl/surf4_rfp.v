@@ -93,7 +93,7 @@ module surf4_rfp(
 	generate
 		genvar pb_dum_i;
 		for (pb_dum_i=8;pb_dum_i<32;pb_dum_i = pb_dum_i+1) begin : DUMMY
-			assign pb_registers[pb_dum_i] = pb_registers[i % 8];
+			assign pb_registers[pb_dum_i] = pb_registers[pb_dum_i % 8];
 		end
 	endgenerate
 
@@ -161,8 +161,8 @@ module surf4_rfp(
 			pb_i2c[3] 	  <= 1;		 						// stb
 			pb_i2c[4] 	  <= pbWrite; 						// we
 			pb_i2c[5]	  <= 0;								// ack
-			pb_i2c[14:8]  <= pb_port[6:0];				// addr
-			pb_i2c[23:16] <= pb_output;					// dat_o
+			pb_i2c[14:8]  <= pbPort[6:0];				// addr
+			pb_i2c[23:16] <= pbOutput;					// dat_o
 		end
 	end
 	// Register 0: PicoBlaze control.

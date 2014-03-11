@@ -49,6 +49,8 @@ module surf4_id_ctrl(
 
 		output sys_clk_o,
 
+		input [11:0] wclk_en_i,		
+
 		// PPS.
 		input PPS,
 
@@ -66,7 +68,9 @@ module surf4_id_ctrl(
 		output LOCAL_OSC_EN,
 		inout FPGA_SST_SEL,
 		input FPGA_SST,
-		input FPGA_TURF_SST		
+		input FPGA_TURF_SST,
+		output [11:0] L4_WCLK_P,
+		output [11:0] L4_WCLK_N
     );
 
 		parameter DEVICE = "S4A7";
@@ -95,6 +99,18 @@ module surf4_id_ctrl(
 		wire spi_inta_o;
 		wire spi_select = (wb_adr_i[7:4] == 4'h3) && (!wb_adr_i[9]);
 		wire spi_sck;
+
+		// Sysclk/Wclk generation.
+		wire wclk_p;
+		wire wclk_n;
+		wire mmcm_locked;
+		wire mmcm_reset;
+		wire mmcm_fb_in;
+		wire mmcm_fb_out;
+		wire mmcm_power_down;
+		wire mmcm_clock_select;
+		wire mmcm_clkfbstopped;
+		wire mmcm_clkinstopped;
 
 		always @(*) begin
 			if (pll_drp_select) wb_data_out_mux <= pll_drp_dat_o;
@@ -138,6 +154,26 @@ module surf4_id_ctrl(
 		`define WISHBONE_ADDRESS( addr, name, TYPE, par1, par2 )														\
 					`TYPE(BASE(addr), name, par1, par2)
 
+		// Sleaze at first. Just make all the registers 32 bit.
+		`WISHBONE_ADDRESS( 16'h0000, DEVICE, OUTPUT, [31:0], 0);
+		`WISHBONE_ADDRESS( 16'h0004, VERSION, OUTPUT, [31:0], 0);
+		`WISHBONE_ADDRESS( 16'h0008, int_sr_reg, OUTPUTSELECT, sel_int_sr_reg, [5:2]);
+		`WISHBONE_ADDRESS( 16'h000C, int_mask_reg, SIGNALRESET, [31:0], {32{1'b0}});
+		`WISHBONE_ADDRESS( 16'h0010, pps_sel_reg, SIGNALRESET, [31:0], {32{1'b0}});
+		`WISHBONE_ADDRESS( 16'h0014, reset_reg, SIGNALRESET, [31:0], {32{1'b0}});
+		`WISHBONE_ADDRESS( 16'h0018, led_reg, OUTPUTSELECT, sel_led_reg, [5:1]);
+		`WISHBONE_ADDRESS( 16'h001C, clocksel_reg, SIGNALRESET, [31:0], {32{1'b0}});
+		`WISHBONE_ADDRESS( 16'h0020, pllctrl_reg, OUTPUTSELECT, sel_pllctrl_reg, [5:2]);
+		`WISHBONE_ADDRESS( 16'h0024, spiss_reg, SIGNALRESET, [31:0], {32{1'b0}});
+		`WISHBONE_ADDRESS( 16'h0028, {32{1'b0}}, OUTPUT, [31:0], 0);
+		`WISHBONE_ADDRESS( 16'h002C, {32{1'b0}}, OUTPUT, [31:0], 0);
+		// Shadow registers - never accessed (the SPI core takes over). Just here to make decoding easier.
+		`WISHBONE_ADDRESS( 16'h0030, pps_sel_reg, OUTPUT, [31:0], 0);
+		`WISHBONE_ADDRESS( 16'h0034, reset_reg, OUTPUT, [31:0], 0);
+		`WISHBONE_ADDRESS( 16'h0038, led_reg, OUTPUT, [31:0], 0);
+		`WISHBONE_ADDRESS( 16'h003C, clocksel_reg, OUTPUT, [31:0], 0);
+		
+
 		//% Interrupt status register. Bits cleared by writing a 1 to them.
 		always @(posedge clk_i) begin : INTERRUPT_STATUS_REGISTER
 			if (rst_i) int_sr_reg <= {32{1'b0}};
@@ -159,26 +195,20 @@ module surf4_id_ctrl(
 				end
 			end
 		end
-		
-		// Sleaze at first. Just make all the registers 32 bit.
-		`WISHBONE_ADDRESS( 16'h0000, DEVICE, OUTPUT, [31:0], 0);
-		`WISHBONE_ADDRESS( 16'h0004, VERSION, OUTPUT, [31:0], 0);
-		`WISHBONE_ADDRESS( 16'h0008, int_sr_reg, OUTPUTSELECT, sel_int_sr_reg, [5:2]);
-		`WISHBONE_ADDRESS( 16'h000C, int_mask_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0010, pps_sel_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0014, reset_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0018, led_reg, OUTPUTSELECT, sel_led_reg, [5:1]);
-		`WISHBONE_ADDRESS( 16'h001C, clocksel_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0020, pllctrl_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0024, spiss_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0028, {32{1'b0}}, OUTPUT, [31:0], 0);
-		`WISHBONE_ADDRESS( 16'h002C, {32{1'b0}}, OUTPUT, [31:0], 0);
-		// Shadow registers - never accessed (the SPI core takes over). Just here to make decoding easier.
-		`WISHBONE_ADDRESS( 16'h0030, pps_sel_reg, OUTPUT, [31:0], 0);
-		`WISHBONE_ADDRESS( 16'h0034, reset_reg, OUTPUT, [31:0], 0);
-		`WISHBONE_ADDRESS( 16'h0038, led_reg, OUTPUT, [31:0], 0);
-		`WISHBONE_ADDRESS( 16'h003C, clocksel_reg, OUTPUT, [31:0], 0);
-		
+		//% PLL control register.
+		always @(posedge clk_i) begin : PLLCTRL_REGISTER
+			if (sel_pllctrl_reg) begin
+				pllctrl_reg[0] <= wb_dat_i[0]; 		// reset
+				pllctrl_reg[1] <= wb_dat_i[1];		// clock select
+				pllctrl_reg[2] <= wb_dat_i[2];		// power down
+			end
+			pllctrl_reg[3] <= mmcm_locked;
+			pllctrl_reg[4] <= mmcm_clkfbstopped;
+			pllctrl_reg[5] <= mmcm_clkinstopped;
+		end
+		assign mmcm_reset = pllctrl_reg[0];
+		assign mmcm_clock_select = pllctrl_reg[1];
+		assign mmcm_power_down = pllctrl_reg[2];
 
 		simple_spi_top u_spi(.clk_i(clk_i),
 							  .rst_i(rst_i),
@@ -251,10 +281,51 @@ module surf4_id_ctrl(
 
 		assign pci_interrupt_o = |(int_sr_reg & ~int_mask_reg);
 
+		// We just want a multiply by 4, so we'll boost the VCO to 1 GHz and divide by 10.
+		// 
+		MMCME2_ADV #(
+		.BANDWIDTH("OPTIMIZED"), // Jitter programming ("HIGH","LOW","OPTIMIZED")
+		.CLKFBOUT_MULT_F(40.0), // Multiply value for all CLKOUT (2.000-64.000).
+		.CLKFBOUT_PHASE(0.0), // Phase offset in degrees of CLKFB (0.00-360.00).
+		// CLKIN_PERIOD: Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
+		.CLKIN1_PERIOD(40.0),
+		.CLKIN2_PERIOD(40.0),
+		// CLKOUT0_DIVIDE - CLKOUT6_DIVIDE: Divide amount for CLKOUT (1-128)
+		.CLKOUT0_DIVIDE_F(10.0), // Divide amount for CLKOUT0 (1.000-128.000).
+		.CLKOUT1_DIVIDE(5.0),	 // Divide amount for CLKOUT1 (WCLK)
+		// CLKOUT0_DUTY_CYCLE - CLKOUT6_DUTY_CYCLE: Duty cycle for CLKOUT outputs (0.01-0.99).
+		.CLKOUT0_DUTY_CYCLE(0.5),
+		// CLKOUT0_PHASE - CLKOUT6_PHASE: Phase offset for CLKOUT outputs (-360.000-360.000).
+		.CLKOUT0_PHASE(0.0),
+		.COMPENSATION("ZHOLD"), // "ZHOLD", "INTERNAL", "EXTERNAL" or "BUF_IN"
+		.DIVCLK_DIVIDE(1), // Master division value (1-106)		
+		.REF_JITTER1(0.0),
+		.REF_JITTER2(0.0),
+		.STARTUP_WAIT("FALSE")) u_mmcm(	.CLKIN1(FPGA_TURF_SST),
+													.CLKIN2(LOCAL_CLK),
+													.CLKOUT0(sysclk_o),
+													.CLKOUT1(wclk_p),
+													.CLKOUT1B(wclk_n),
+													.LOCKED(mmcm_locked),
+													.RST(mmcm_rst),
+													.PWRDWN(mmcm_power_down),
+													.CLKFBOUT(mmcm_fb_out),
+													.CLKFBIN(mmcm_fb_in),
+													.CLKINSEL(mmcm_clock_select),
+													.CLKFBSTOPPED(mmcm_clkfbstopped),
+													.CLKINSTOPPED(mmcm_clkinstopped));
+		generate
+			genvar w_i;
+			for (w_i=0;w_i<12;w_i=w_i+1) begin : WCLK_OUT
+				wire wclk_to_obuf;
+				ODDR2 #(.DDR_ALIGNMENT("NONE"),.INIT(1'b0),.SRTYPE("SYNC")) u_wclk_oddr2(.Q(wclk_to_obuf),.C0(wclk_p),.C1(wclk_n),.CE(wclk_en_i[w_i]),.D0(1'b0),.D1(1'b1),.R(0),.S(0));
+				OBUFDS u_wclk_obufds(.I(wclk_to_obuf),.O(L4_WCLK_P[w_i]),.OB(L4_WCLK_N[w_i]));
+			end
+		endgenerate													
+													
 		// To Do:
 		// -- PPS generation/selection/control.
 		// -- Ext trig generation/selection/control.
-		// -- Sysclk generation.
 		assign pps_o = 0;
 		assign pps_sysclk_o = 0;
 		assign ext_trig_o = 0;

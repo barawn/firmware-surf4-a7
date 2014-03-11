@@ -64,14 +64,14 @@ module surf4_hk_collector(
 	wire ctrl_ack;
 	// just kill it for now
 	assign ctrl_dat_o = {32{1'b0}};
-	assign ctrl_ack = cyc_i && stb_i && sel_control;
+	assign ctrl_ack = wbsc_cyc_i && wbsc_stb_i && sel_control;
 
 	// Buffer section
 	wire [31:0] buf_dat_o;
 	wire buf_ack;
 	// just kill it for now
 	assign buf_dat_o = {32{1'b0}};
-	assign buf_ack_o = cyc_i && stb_i && sel_control;
+	assign buf_ack_o = wbsc_cyc_i && wbsc_stb_i && sel_control;
 	
 	
 	///////////////////////////////////////////////

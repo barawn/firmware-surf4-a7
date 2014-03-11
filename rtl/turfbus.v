@@ -15,5 +15,5 @@ module turfbus( input wbm_clk_i,
     );
 
 	assign SREQ_neg = 1;
-
+	`WB_KILL(wbm, 32, 20, 4);
 endmodule

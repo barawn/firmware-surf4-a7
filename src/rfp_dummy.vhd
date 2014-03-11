@@ -103,7 +103,7 @@ begin
   enable_b <= bram_we_i or bram_rd_i;
   we_b <= "00" & bram_we_i & bram_we_i;
   clk_b <= clk;
-  ack_o <= ack;
+  bram_ack_o <= ack;
   ack_process : process (clk)
   begin
 	if (rising_edge(clk)) then
