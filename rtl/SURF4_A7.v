@@ -179,7 +179,7 @@ module SURF4_A7(
    // to pull out sensor data - an I2C to WISHBONE slave already exists).
    
    // Control WISHBONE bus clock. Probably the PCI clock.
-   wire 		      wbc_clk;
+   wire 		      wbc_clk = PCI_CLK;
    // Control WISHBONE bus reset.
    wire      wbc_rst;
    //% PPS. In WBC_CLK domain.
@@ -249,7 +249,7 @@ module SURF4_A7(
 	`PCI_TRIS_VECTOR(pci_cbe, 4);
 
 	// PCI bridge.
-	pci_bridge32 u_pci(.pci_clk_i(clk_i),
+	pci_bridge32 u_pci(.pci_clk_i(PCI_CLK),
 				`PCI_TRIS_CONNECT(pci_rst),
 				.pci_req_o(pci_req_o),
 				.pci_req_oe_o(pci_req_oe),
@@ -268,7 +268,7 @@ module SURF4_A7(
 				.pci_serr_o(pci_serr_o),
 				.pci_serr_oe_o(pci_serr_oe),
 
-				.wb_clk_i(wb_clk),
+				.wb_clk_i(wbc_clk),
 				.wb_rst_o(wb_rst_in),
 				.wb_rst_i(wb_rst_out),
 				.wb_int_o(wb_int_in),
