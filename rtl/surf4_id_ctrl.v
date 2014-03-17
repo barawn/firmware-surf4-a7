@@ -123,7 +123,8 @@ module surf4_id_ctrl(
 		end
 		assign wb_ack_o = wb_ack_mux;
 		assign wb_dat_o = wb_data_out_mux;
-		
+		assign wb_err_o = 0;
+		assign wb_rty_o = 0;
 		// BASE needs to be defined to convert the base address into an index.
 		localparam BASEWIDTH = 4;
 		function [BASEWIDTH-1:0] BASE;
@@ -157,13 +158,13 @@ module surf4_id_ctrl(
 		// Sleaze at first. Just make all the registers 32 bit.
 		`WISHBONE_ADDRESS( 16'h0000, DEVICE, OUTPUT, [31:0], 0);
 		`WISHBONE_ADDRESS( 16'h0004, VERSION, OUTPUT, [31:0], 0);
-		`WISHBONE_ADDRESS( 16'h0008, int_sr_reg, OUTPUTSELECT, sel_int_sr_reg, [5:2]);
+		`WISHBONE_ADDRESS( 16'h0008, int_sr_reg, OUTPUTSELECT, sel_int_sr_reg, [3:0]);
 		`WISHBONE_ADDRESS( 16'h000C, int_mask_reg, SIGNALRESET, [31:0], {32{1'b0}});
 		`WISHBONE_ADDRESS( 16'h0010, pps_sel_reg, SIGNALRESET, [31:0], {32{1'b0}});
 		`WISHBONE_ADDRESS( 16'h0014, reset_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0018, led_reg, OUTPUTSELECT, sel_led_reg, [5:1]);
+		`WISHBONE_ADDRESS( 16'h0018, led_reg, OUTPUTSELECT, sel_led_reg, [3:0]);
 		`WISHBONE_ADDRESS( 16'h001C, clocksel_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0020, pllctrl_reg, OUTPUTSELECT, sel_pllctrl_reg, [5:2]);
+		`WISHBONE_ADDRESS( 16'h0020, pllctrl_reg, OUTPUTSELECT, sel_pllctrl_reg, [3:0]);
 		`WISHBONE_ADDRESS( 16'h0024, spiss_reg, SIGNALRESET, [31:0], {32{1'b0}});
 		`WISHBONE_ADDRESS( 16'h0028, {32{1'b0}}, OUTPUT, [31:0], 0);
 		`WISHBONE_ADDRESS( 16'h002C, {32{1'b0}}, OUTPUT, [31:0], 0);
@@ -303,7 +304,7 @@ module surf4_id_ctrl(
 		.REF_JITTER2(0.0),
 		.STARTUP_WAIT("FALSE")) u_mmcm(	.CLKIN1(FPGA_TURF_SST),
 													.CLKIN2(LOCAL_CLK),
-													.CLKOUT0(sysclk_o),
+													.CLKOUT0(sys_clk_o),
 													.CLKOUT1(wclk_p),
 													.CLKOUT1B(wclk_n),
 													.LOCKED(mmcm_locked),
@@ -318,7 +319,7 @@ module surf4_id_ctrl(
 			genvar w_i;
 			for (w_i=0;w_i<12;w_i=w_i+1) begin : WCLK_OUT
 				wire wclk_to_obuf;
-				ODDR2 #(.DDR_ALIGNMENT("NONE"),.INIT(1'b0),.SRTYPE("SYNC")) u_wclk_oddr2(.Q(wclk_to_obuf),.C0(wclk_p),.C1(wclk_n),.CE(wclk_en_i[w_i]),.D0(1'b0),.D1(1'b1),.R(0),.S(0));
+				ODDR2 #(.DDR_ALIGNMENT("NONE"),.INIT(1'b0),.SRTYPE("SYNC")) u_wclk_oddr2(.Q(wclk_to_obuf),.C0(wclk_p),.C1(wclk_n),.CE(wclk_en_i[w_i]),.D0(1'b0),.D1(1'b1),.R(1'b0),.S(1'b0));
 				OBUFDS u_wclk_obufds(.I(wclk_to_obuf),.O(L4_WCLK_P[w_i]),.OB(L4_WCLK_N[w_i]));
 			end
 		endgenerate													
@@ -330,5 +331,4 @@ module surf4_id_ctrl(
 		assign pps_sysclk_o = 0;
 		assign ext_trig_o = 0;
 		assign ext_trig_sysclk_o = 0;
-		assign sysclk_o = 0;
 endmodule

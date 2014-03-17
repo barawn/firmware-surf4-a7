@@ -24,8 +24,8 @@ module i2c_x12_top(
 			input rst_i,
 			`WBS_NAMED_PORT(wb0, 8, 7, 1),
 			`WBS_NAMED_PORT(wb1, 8, 7, 1),
-			inout [11:0] L4_SDA,
-			inout [11:0] L4_SCL
+			inout [11:0] SDA,
+			inout [11:0] SCL
     );
 
 	`WB_DEFINE_VECTOR(i2c, 8, 3, 1, 12);
@@ -46,12 +46,13 @@ module i2c_x12_top(
 	generate
 		genvar ii;
 		for (ii=0;ii<12;ii=ii+1) begin : I2C_CORE
-			assign L4_SDA[ii] = sda_pad_oen_o[ii] ? 1'bZ : sda_pad_o[ii];
-			assign L4_SCL[ii] = scl_pad_oen_o[ii] ? 1'bZ : scl_pad_o[ii];
-			assign scl_pad_i[ii] = L4_SCL[ii];
-			assign sda_pad_i[ii] = L4_SDA[ii];
-			i2c_master_top u_i2c(.scl_pad_i(scl_pad_i[ii]),.scl_pad_o(scl_pad_o[ii]),.scl_pad_oen_o(scl_pad_oen_o[ii]),
-										.sda_pad_i(sda_pad_i[ii]),.sda_pad_o(sda_pad_o[ii]),.sda_pad_oen_o(sda_pad_oen_o[ii]),
+			assign SDA[ii] = sda_pad_oen_o[ii] ? 1'bZ : sda_pad_o[ii];
+			assign SCL[ii] = scl_pad_oen_o[ii] ? 1'bZ : scl_pad_o[ii];
+			assign scl_pad_i[ii] = SCL[ii];
+			assign sda_pad_i[ii] = SDA[ii];
+			assign i2c_sel_o[ii] = 1'b0;
+			i2c_master_top u_i2c(.scl_pad_i(scl_pad_i[ii]),.scl_pad_o(scl_pad_o[ii]),.scl_padoen_o(scl_pad_oen_o[ii]),
+										.sda_pad_i(sda_pad_i[ii]),.sda_pad_o(sda_pad_o[ii]),.sda_padoen_o(sda_pad_oen_o[ii]),
 										.wb_clk_i(clk_i),
 										.wb_rst_i(rst_i),
 										.arst_i(1'b0),
@@ -59,7 +60,7 @@ module i2c_x12_top(
 			// demux cyc, stb, we, adr, dat_o.
 			assign i2c_cyc_o[ii] = (wb0_gnt[ii] && wb0_cyc_i) || (wb1_gnt[ii] && wb1_cyc_i);
 			assign i2c_stb_o[ii] = (wb0_gnt[ii] && wb0_stb_i) || (wb1_gnt[ii] && wb1_stb_i);
-			assign i2c_we_o[ii] = (wb0_gnt[ii] && wb0_stb_i) || (wb1_gnt[ii] && wb1_we_i);
+			assign i2c_we_o[ii] = (wb0_gnt[ii] && wb0_we_i) || (wb1_gnt[ii] && wb1_we_i);
 			assign i2c_adr_o[ii] = (wb0_gnt[ii]) ? (wb0_adr_i[2:0]) : (wb1_adr_i[2:0]);
 			assign i2c_dat_o[ii] = (wb0_gnt[ii]) ? wb0_dat_i : wb1_dat_i;
 			always @(posedge clk_i) begin : PRIORITY_ARBITER
@@ -93,14 +94,14 @@ module i2c_x12_top(
 	// Everything else we can just mux.
 	
 	// mux
-	assign wb0_dat_o = i2c_dat_i[wb0_adr_i[6:4]];
-	assign wb0_ack_o = i2c_ack_i[wb0_adr_i[6:4]] && wb0_gnt[wb0_adr_i[6:4]];
-	assign wb0_rty_o = i2c_rty_i[wb0_adr_i[6:4]] && wb0_gnt[wb0_adr_i[6:4]];
-	assign wb0_err_o = i2c_err_i[wb0_adr_i[6:4]] && wb0_gnt[wb0_adr_i[6:4]] || (wb0_illegal_address && wb0_cyc_i && wb0_stb_i);
+	assign wb0_dat_o = i2c_dat_i[wb0_adr_i[6:3]];
+	assign wb0_ack_o = i2c_ack_i[wb0_adr_i[6:3]] && wb0_gnt[wb0_adr_i[6:3]];
+	assign wb0_rty_o = i2c_rty_i[wb0_adr_i[6:3]] && wb0_gnt[wb0_adr_i[6:3]];
+	assign wb0_err_o = i2c_err_i[wb0_adr_i[6:3]] && wb0_gnt[wb0_adr_i[6:3]] || (wb0_illegal_address && wb0_cyc_i && wb0_stb_i);
 	// mux
-	assign wb1_dat_o = i2c_dat_i[wb1_adr_i[6:4]];
-	assign wb1_ack_o = i2c_ack_i[wb1_adr_i[6:4]] && wb1_gnt[wb1_adr_i[6:4]];
-	assign wb1_rty_o = i2c_rty_i[wb1_adr_i[6:4]] && wb1_gnt[wb1_adr_i[6:4]];
-	assign wb1_err_o = i2c_err_i[wb1_adr_i[6:4]] && wb1_gnt[wb1_adr_i[6:4]] || (wb1_illegal_address && wb1_cyc_i && wb1_stb_i);
+	assign wb1_dat_o = i2c_dat_i[wb1_adr_i[6:3]];
+	assign wb1_ack_o = i2c_ack_i[wb1_adr_i[6:3]] && wb1_gnt[wb1_adr_i[6:3]];
+	assign wb1_rty_o = i2c_rty_i[wb1_adr_i[6:3]] && wb1_gnt[wb1_adr_i[6:3]];
+	assign wb1_err_o = i2c_err_i[wb1_adr_i[6:3]] && wb1_gnt[wb1_adr_i[6:3]] || (wb1_illegal_address && wb1_cyc_i && wb1_stb_i);
 
 endmodule

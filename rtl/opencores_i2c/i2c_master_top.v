@@ -81,7 +81,7 @@
 
 module i2c_master_top(
 	wb_clk_i, wb_rst_i, arst_i, wb_adr_i, wb_dat_i, wb_dat_o,
-	wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o, wb_inta_o,
+	wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o, wb_rty_o, wb_err_o, wb_sel_i, wb_inta_o,
 	scl_pad_i, scl_pad_o, scl_padoen_o, sda_pad_i, sda_pad_o, sda_padoen_o, debug_o );
 
 	// parameters
@@ -104,7 +104,10 @@ module i2c_master_top(
 	input        wb_cyc_i;     // valid bus cycle input
 	output       wb_ack_o;     // bus cycle acknowledge output
 	output       wb_inta_o;    // interrupt request signal output
+   output 		 wb_rty_o;
+	output		 wb_err_o;
 	output [4:0] debug_o;
+	input [0:0]	 wb_sel_i;
 	wire [WB_LATENCY:0] wb_cycstb_pipe;
 	assign wb_cycstb_pipe[WB_LATENCY] = wb_cyc_i && wb_stb_i;
 	assign wb_ack_o = wb_cycstb_pipe[0] && wb_cyc_i && wb_stb_i;
@@ -339,4 +342,6 @@ module i2c_master_top(
 	assign sr[1]   = tip;
 	assign sr[0]   = irq_flag;
 
+   assign wb_rty_o = 0;
+	assign wb_err_o = 0;
 endmodule

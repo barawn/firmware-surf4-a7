@@ -41,7 +41,7 @@ module surf4_hk_collector(
 	wire [15:0] xadc_vaux_p;
 	assign xadc_vaux_p[15:11] = {5{1'b0}};
 	assign xadc_vaux_p[10] = MGT1P2_P;
-	assign xadc_vaux_n[9:0] = {10{1'b0}};
+	assign xadc_vaux_p[9:0] = {10{1'b0}};
 	wire [15:0] xadc_vaux_n;
 	assign xadc_vaux_n[15:11] = {5{1'b0}};
 	assign xadc_vaux_n[10] = MGT1P2_N;
@@ -71,7 +71,7 @@ module surf4_hk_collector(
 	wire buf_ack;
 	// just kill it for now
 	assign buf_dat_o = {32{1'b0}};
-	assign buf_ack_o = wbsc_cyc_i && wbsc_stb_i && sel_control;
+	assign buf_ack = wbsc_cyc_i && wbsc_stb_i && sel_control;
 	
 	
 	///////////////////////////////////////////////
@@ -89,10 +89,15 @@ module surf4_hk_collector(
 		else if (sel_xadc) wbsc_ack_muxed <= xadc_ack;
 		else wbsc_ack_muxed <= buf_ack;
 	end
+	assign wbsc_dat_o = wbsc_dat_out_muxed;
+	assign wbsc_ack_o = wbsc_ack_muxed;
+	assign wbsc_err_o = 0;
+	assign wbsc_rty_o = 0;
+	
 	///////////////////////////////////////////////
 	// WISHBONE master port.
 	///////////////////////////////////////////////
 	// Just kill it for now.
-	`WB_KILL(wmbc, 32, 20, 4);
+	`WB_KILL(wbmc, 32, 20, 4);
 	
 endmodule

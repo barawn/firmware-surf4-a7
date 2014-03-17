@@ -156,6 +156,21 @@ module SURF4_A7(
 		input				MGT1P2_N	
 	 );
    
+	wire [11:0] L4_RX;
+	wire [11:0] L4_TX;
+	wire [11:0] L4_CLK;
+	wire [11:0] L4_TIMING;
+	
+	generate
+		genvar ii;
+		for (ii=0;ii<12;ii=ii+1) begin : ARCH
+			IBUFDS u_rx_ibuf(.I(L4_RX_P[ii]),.IB(L4_RX_N[ii]),.O(L4_RX[ii]));
+			IBUFDS u_timing_ibuf(.I(L4_TIMING_P[ii]),.IB(L4_TIMING_N[ii]),.O(L4_TIMING[ii]));
+			OBUFDS u_tx_obuf(.I(L4_TX[ii]),.O(L4_TX_P[ii]),.OB(L4_TX_N[ii]));
+			OBUFDS u_clk_obuf(.I(L4_CLK[ii]),.O(L4_CLK_P[ii]),.OB(L4_CLK_N[ii]));
+		end
+	endgenerate
+	
    // Internally there are three main busses: the 'control' WISHBONE bus, which has 3 masters and 4 slaves,
    // and the 'data' WISHBONE bus, which has 2 masters and 2 slaves, and the LAB4 I2C bus, which has
    // 12 slaves and 2 masters.
@@ -270,8 +285,11 @@ module SURF4_A7(
    wbc_intercon u_wbc_intercon(	.clk_i(wbc_clk),.rst_i(wbc_rst),
 				`WBS_CONNECT(pcic, pcic),
 				`WBS_CONNECT(turfc, turfc),
-				`WBS_CONNECT(hkcmc, hkmc),
-				`WBM_CONNECT(s4_id_ctrl, s4_id_ctrl));
+				`WBS_CONNECT(hkmc, hkmc),
+				`WBM_CONNECT(s4_id_ctrl, s4_id_ctrl),
+				`WBM_CONNECT(hksc, hksc),
+				`WBM_CONNECT(rfp, rfp),
+				`WBM_CONNECT(lab4, lab4));
    
    // TURFbus. This is the data path back to the TURF.
    // This also needs a slave port definition for the data side bus.
@@ -332,7 +350,7 @@ module SURF4_A7(
    //
    // Note that this means this has *three* WISHBONE ports. A slave control, a master control, and a master data.
    // We only implement 2 of the 3 right now (no WISHBONE data bus yet).
-   surf4_hk_collector u_hk_collector(.wbc_clk_i(wbc_clk),.wbc_rst_i(wbc_rst),
+   surf4_hk_collector u_hk_collector(.clk_i(wbc_clk),.rst_i(wbc_rst),
 				     `WBS_CONNECT(hksc, wbsc),
 				     `WBM_CONNECT(hkmc, wbmc),
 				     .pps_i(global_pps),
@@ -343,7 +361,7 @@ module SURF4_A7(
    
    // RFP module. This handles reading out and control over the RF power section.
    // This has two WISHBONE ports: a slave control, and a master i2c.
-   surf4_rfp u_rfp(.wbc_clk_i(wbc_clk),.wbc_rst_i(wbc_rst),
+   surf4_rfp u_rfp(.clk_i(wbc_clk),.rst_i(wbc_rst),
 		   `WBS_CONNECT(rfp, wbc),
 		   `WBM_CONNECT(i2c_rfp, i2c),
 		   .pps_i(global_pps));
@@ -354,7 +372,7 @@ module SURF4_A7(
    // A master data, for sending the data out.
    lab4_top u_lab4(.wbc_clk_i(wbc_clk),.wbc_rst_i(wbc_rst),
 		   `WBS_CONNECT(lab4, wbc),
-		   `WBM_CONNECT(i2c_lab4, i2c),
+//		   `WBM_CONNECT(i2c_lab4, i2c),
 		   .sys_clk_i(sys_clk),
 		   .pps_i(global_pps),
 		   .pps_sysclk_i(global_pps_sysclk),
@@ -380,6 +398,8 @@ module SURF4_A7(
 		   .L4F_WR(L4F_WR),
 		   .L4G_WR_EN(L4G_WR_EN),
 		   .L4G_WR(L4G_WR),
+			.L4H_WR_EN(L4H_WR_EN),
+			.L4H_WR(L4H_WR),
 		   .L4I_WR_EN(L4I_WR_EN),
 		   .L4I_WR(L4I_WR),
 		   .L4J_WR_EN(L4J_WR_EN),
@@ -388,7 +408,7 @@ module SURF4_A7(
 		   .L4K_WR(L4K_WR),
 		   .L4L_WR_EN(L4L_WR_EN),
 		   .L4L_WR(L4L_WR));
-   
+	`WB_KILL(i2c_lab4, 8, 7, 1);
    
    // Notes on the I2C WISHBONE bus:
    // This bus will consists of 12 OpenCores I2C controller modules interconnected via a crossbar switch, to allow both the RFP
