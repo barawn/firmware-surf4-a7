@@ -1,4 +1,17 @@
 `timescale 1ns / 1ps
+////////////////////////////////////////////////////////////////////////////////
+// This file is a part of the Antarctic Impulsive Transient Antenna (ANITA)
+// project, a collaborative scientific effort between multiple institutions. For
+// more information, contact Peter Gorham (gorham@phys.hawaii.edu).
+//
+// All rights reserved.
+//
+// Author: Patrick Allison, Ohio State University (allison.122@osu.edu)
+// Author:
+// Author:
+////////////////////////////////////////////////////////////////////////////////
+
+
 // SURF4 ID and Control Block.
 //
 // This module contains:
@@ -48,7 +61,8 @@ module surf4_id_ctrl(
 		input [11:0] internal_led_i,
 
 		output sys_clk_o,
-
+		output local_clk_o,
+		
 		input [11:0] wclk_en_i,		
 
 		// PPS.
@@ -67,7 +81,7 @@ module surf4_id_ctrl(
 		input LOCAL_CLK,
 		output LOCAL_OSC_EN,
 		inout FPGA_SST_SEL,
-		input FPGA_SST,
+		output FPGA_SST,
 		input FPGA_TURF_SST,
 		output [11:0] L4_WCLK_P,
 		output [11:0] L4_WCLK_N
@@ -91,6 +105,7 @@ module surf4_id_ctrl(
 		reg [31:0] pllctrl_reg = {32{1'b0}};
 		reg [31:0] spiss_reg = {32{1'b0}};
 		reg internal_ack = 0;
+		
 		wire [31:0] pll_drp_dat_o; 
 		wire pll_drp_select = (wb_adr_i[9]);
 
@@ -105,12 +120,15 @@ module surf4_id_ctrl(
 		wire wclk_n;
 		wire mmcm_locked;
 		wire mmcm_reset;
-		wire mmcm_fb_in;
 		wire mmcm_fb_out;
+		wire mmcm_fb_in = mmcm_fb_out;
 		wire mmcm_power_down;
 		wire mmcm_clock_select;
 		wire mmcm_clkfbstopped;
 		wire mmcm_clkinstopped;
+		always @(posedge clk_i) begin
+			internal_ack <= wb_cyc_i && wb_stb_i && !(pll_drp_select || spi_select);
+		end
 
 		always @(*) begin
 			if (pll_drp_select) wb_data_out_mux <= pll_drp_dat_o;
@@ -135,20 +153,20 @@ module surf4_id_ctrl(
 		endfunction
 		`define OUTPUT(addr, x, range, dummy)																				\
 					assign wishbone_registers[ addr ] range = x
-		`define SELECT(addr, x, addrrange, dummy)																			\
+		`define SELECT(addr, x, dummy, dummy)																			\
 					wire x;																											\
 					localparam [BASEWIDTH-1:0] addr_``x = addr;															\
-					assign x = (wb_cyc_i && wb_stb_i && wb_we_i && wb_ack_o && (wb_adr_i addrrange == addr_``x addrrange))
-		`define OUTPUTSELECT(addr, x, y, addrrange)																		\
+					assign x = (wb_cyc_i && wb_stb_i && wb_we_i && wb_ack_o && (BASE(wb_adr_i) == addr_``x))
+		`define OUTPUTSELECT(addr, x, y, dummy)																		\
 					wire y;																											\
 					localparam [BASEWIDTH-1:0] addr_``y = addr;															\
-					assign y = (wb_cyc_i && wb_stb_i && wb_we_i && wb_ack_o && (wb_adr_i addrrange == addr_``y addrrange));	\
+					assign y = (wb_cyc_i && wb_stb_i && wb_we_i && wb_ack_o && (BASE(wb_adr_i) == addr_``y));	\
 					assign wishbone_registers[ addr ] = x
 
 		`define SIGNALRESET(addr, x, range, resetval)																	\
 					always @(posedge clk_i) begin																			\
 						if (rst_i) x <= resetval;																				\
-						else if (wb_cyc_i && wb_stb_i && wb_we_i && (wb_adr_i[BASEWIDTH-1:0] == addr))		\
+						else if (wb_cyc_i && wb_stb_i && wb_we_i && (BASE(wb_adr_i) == addr))		\
 							x <= wb_dat_i range;																						\
 					end																												\
 					assign wishbone_registers[ addr ] range = x
@@ -158,13 +176,13 @@ module surf4_id_ctrl(
 		// Sleaze at first. Just make all the registers 32 bit.
 		`WISHBONE_ADDRESS( 16'h0000, DEVICE, OUTPUT, [31:0], 0);
 		`WISHBONE_ADDRESS( 16'h0004, VERSION, OUTPUT, [31:0], 0);
-		`WISHBONE_ADDRESS( 16'h0008, int_sr_reg, OUTPUTSELECT, sel_int_sr_reg, [3:0]);
+		`WISHBONE_ADDRESS( 16'h0008, int_sr_reg, OUTPUTSELECT, sel_int_sr_reg, 0);
 		`WISHBONE_ADDRESS( 16'h000C, int_mask_reg, SIGNALRESET, [31:0], {32{1'b0}});
 		`WISHBONE_ADDRESS( 16'h0010, pps_sel_reg, SIGNALRESET, [31:0], {32{1'b0}});
 		`WISHBONE_ADDRESS( 16'h0014, reset_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0018, led_reg, OUTPUTSELECT, sel_led_reg, [3:0]);
+		`WISHBONE_ADDRESS( 16'h0018, led_reg, OUTPUTSELECT, sel_led_reg, 0);
 		`WISHBONE_ADDRESS( 16'h001C, clocksel_reg, SIGNALRESET, [31:0], {32{1'b0}});
-		`WISHBONE_ADDRESS( 16'h0020, pllctrl_reg, OUTPUTSELECT, sel_pllctrl_reg, [3:0]);
+		`WISHBONE_ADDRESS( 16'h0020, pllctrl_reg, OUTPUTSELECT, sel_pllctrl_reg, 0);
 		`WISHBONE_ADDRESS( 16'h0024, spiss_reg, SIGNALRESET, [31:0], {32{1'b0}});
 		`WISHBONE_ADDRESS( 16'h0028, {32{1'b0}}, OUTPUT, [31:0], 0);
 		`WISHBONE_ADDRESS( 16'h002C, {32{1'b0}}, OUTPUT, [31:0], 0);
@@ -231,8 +249,8 @@ module surf4_id_ctrl(
 									 .PACK(1'b0),
 									 .USRCCLKO(spi_sck),
 									 .USRCCLKTS(1'b0),
-									 .USRDONEO(1'b0),
-									 .USRDONETS(1'b0));
+									 .USRDONEO(1'b1),
+									 .USRDONETS(1'b1));
 	
 		
 		// LED register:
@@ -253,17 +271,29 @@ module surf4_id_ctrl(
 			case (counter)
 				// 0-5 are green, 6-11 are red.
 				0: if (led_reg[0]) begin led_out <= 4'b0001; led_oen <= 4'b0110; end // 0-3
+							else		 led_oen <= 4'b1111;
 				1: if (led_reg[1]) begin led_out <= 4'b0010; led_oen <= 4'b0101; end // 1-3
+							else		 led_oen <= 4'b1111;
 				2: if (led_reg[2]) begin led_out <= 4'b0100; led_oen <= 4'b0011; end // 2-3
+							else		 led_oen <= 4'b1111;
 				3: if (led_reg[3]) begin led_out <= 4'b0001; led_oen <= 4'b1010; end // 0-2
+							else		 led_oen <= 4'b1111;
 				4: if (led_reg[4]) begin led_out <= 4'b0010; led_oen <= 4'b1001; end // 1-2
+							else		 led_oen <= 4'b1111;
 				5: if (led_reg[5]) begin led_out <= 4'b0001; led_oen <= 4'b1100; end // 0-1
+							else		 led_oen <= 4'b1111;
 				6: if (led_reg[6]) begin led_out <= 4'b1000; led_oen <= 4'b0110; end // 3-0
+							else		 led_oen <= 4'b1111;
 				7: if (led_reg[7]) begin led_out <= 4'b1000; led_oen <= 4'b0101; end // 3-1
+							else		 led_oen <= 4'b1111;
 				8: if (led_reg[8]) begin led_out <= 4'b1000; led_oen <= 4'b0011; end // 3-2
+							else		 led_oen <= 4'b1111;
 				9: if (led_reg[9]) begin led_out <= 4'b0100; led_oen <= 4'b1010; end // 2-0
+							else		 led_oen <= 4'b1111;
 				10: if (led_reg[10]) begin led_out <= 4'b0100; led_oen <= 4'b1001; end // 2-1
+							else		 led_oen <= 4'b1111;
 				11: if (led_reg[11]) begin led_out <= 4'b0010; led_oen <= 4'b1100; end // 1-0
+							else		 led_oen <= 4'b1111;
 				default: led_oen <= 4'b1111;
 			endcase
 		end
@@ -282,8 +312,13 @@ module surf4_id_ctrl(
 
 		assign pci_interrupt_o = |(int_sr_reg & ~int_mask_reg);
 
+		assign local_clk_o = LOCAL_CLK;
+
 		// We just want a multiply by 4, so we'll boost the VCO to 1 GHz and divide by 10.
 		// 
+		wire SST_FB;
+		wire sys_clk_mmcm;
+		
 		MMCME2_ADV #(
 		.BANDWIDTH("OPTIMIZED"), // Jitter programming ("HIGH","LOW","OPTIMIZED")
 		.CLKFBOUT_MULT_F(40.0), // Multiply value for all CLKOUT (2.000-64.000).
@@ -304,22 +339,26 @@ module surf4_id_ctrl(
 		.REF_JITTER2(0.0),
 		.STARTUP_WAIT("FALSE")) u_mmcm(	.CLKIN1(FPGA_TURF_SST),
 													.CLKIN2(LOCAL_CLK),
-													.CLKOUT0(sys_clk_o),
+													.CLKOUT0(sys_clk_mmcm),
 													.CLKOUT1(wclk_p),
 													.CLKOUT1B(wclk_n),
 													.LOCKED(mmcm_locked),
-													.RST(mmcm_rst),
+													.RST(mmcm_reset),
 													.PWRDWN(mmcm_power_down),
 													.CLKFBOUT(mmcm_fb_out),
 													.CLKFBIN(mmcm_fb_in),
 													.CLKINSEL(mmcm_clock_select),
 													.CLKFBSTOPPED(mmcm_clkfbstopped),
 													.CLKINSTOPPED(mmcm_clkinstopped));
+		wire wclk;
+		BUFG u_wclk(.I(wclk_p),.O(wclk));
+		BUFG u_sysclk(.I(sys_clk_mmcm),.O(sys_clk_o));
+
 		generate
 			genvar w_i;
 			for (w_i=0;w_i<12;w_i=w_i+1) begin : WCLK_OUT
 				wire wclk_to_obuf;
-				ODDR2 #(.DDR_ALIGNMENT("NONE"),.INIT(1'b0),.SRTYPE("SYNC")) u_wclk_oddr2(.Q(wclk_to_obuf),.C0(wclk_p),.C1(wclk_n),.CE(wclk_en_i[w_i]),.D0(1'b0),.D1(1'b1),.R(1'b0),.S(1'b0));
+				ODDR #(.INIT(1'b0),.SRTYPE("SYNC")) u_wclk_oddr2(.Q(wclk_to_obuf),.C(wclk),.CE(wclk_en_i[w_i]),.D1(1'b0),.D2(1'b1),.R(1'b0),.S(1'b0));
 				OBUFDS u_wclk_obufds(.I(wclk_to_obuf),.O(L4_WCLK_P[w_i]),.OB(L4_WCLK_N[w_i]));
 			end
 		endgenerate													

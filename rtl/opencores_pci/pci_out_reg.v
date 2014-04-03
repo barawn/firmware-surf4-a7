@@ -72,8 +72,7 @@ module pci_out_reg
     dat_in,
     en_in,
     en_out,
-    dat_out,
-	 dat_pad_out
+    dat_out
 );
 
 input   reset_in,
@@ -84,14 +83,10 @@ input   reset_in,
         en_in ;
 
 output dat_out ;
-output dat_pad_out ;
 output en_out ;
 
-(* IOB = "TRUE" *)
-reg dat_pad_out;
-(* IOB = "FALSE" *)
-reg en_out;
-reg dat_out;
+reg dat_out,
+    en_out ;
 
 `ifdef ACTIVE_LOW_OE
 wire en = ~en_in ;
@@ -103,13 +98,10 @@ wire en = en_in ;
 
 always@(posedge reset_in or posedge clk_in)
 begin
-    if ( reset_in ) begin
+    if ( reset_in )
         dat_out <= #`FF_DELAY 1'b0 ;
-		  dat_pad_out <= #`FF_DELAY 1'b0;
-    end else if ( dat_en_in ) begin
+    else if ( dat_en_in )
         dat_out <= #`FF_DELAY dat_in ;
-		  dat_pad_out <= #`FF_DELAY 1'b0;
-	 end
 end
 
 always@(posedge reset_in or posedge clk_in)

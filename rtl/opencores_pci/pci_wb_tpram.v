@@ -324,6 +324,7 @@ input [`PCI_MBIST_CTRL_WIDTH - 1:0] mbist_ctrl_i;       // bist chain shift cont
     //
     // Block 0
     //
+
     RAMB4_S16_S16 ramb4_s16_s16_0(
     	.CLKA(clk_a),
     	.RSTA(rst_a),
@@ -341,6 +342,7 @@ input [`PCI_MBIST_CTRL_WIDTH - 1:0] mbist_ctrl_i;       // bist chain shift cont
     	.WEB(we_b),
     	.DOB(do_b[15:0])
     );
+
     //
     // Block 1
     //

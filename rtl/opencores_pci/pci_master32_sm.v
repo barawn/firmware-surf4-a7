@@ -247,23 +247,6 @@ begin
     if ( change_state )
         cur_state <= #`FF_DELAY next_state ;
 end
-// We really want sm_idle to be a register (i.e. one-hot encoding) so it can be duplicated.
-always @(posedge reset_in or posedge clk_in)
-begin
-	if (reset_in) sm_idle <= 1;
-	else if (change_state) begin
-		if (next_state == S_IDLE) sm_idle <= 1;
-		else sm_idle <= 0;
-	end
-end
-always @(posedge reset_in or posedge clk_in)
-begin
-	if (reset_in) sm_turn_arround <= 0;
-	else if (change_state) begin
-		if (next_state == S_TA_END) sm_turn_arround <= 1;
-		else sm_turn_arround <= 0;
-	end
-end
 
 // parameters - data selector - ad and bc lines switch between address/data and bus command/byte enable respectively
 parameter SEL_ADDR_BC      = 2'b01 ;
@@ -523,8 +506,6 @@ pci_frame_en_crit frame_iob_en_feed
     .pci_trdy_in        (pci_trdy_in)
 ) ;
 
-
-
 // state machine next state definitions
 always@(
     cur_state or
@@ -535,16 +516,16 @@ begin
     // default values for state machine outputs
     wait_out                = 1'b1 ;
     wdata_selector          = SEL_ADDR_BC ;
-//    sm_idle                 = 1'b0 ;
+    sm_idle                 = 1'b0 ;
     sm_address              = 1'b0 ;
     sm_data_phases          = 1'b0 ;
-//    sm_turn_arround         = 1'b0 ;
+    sm_turn_arround         = 1'b0 ;
 
     case ( cur_state )
 
         S_IDLE: begin
                     // indicate the state
-//                    sm_idle      = 1'b1 ;
+                    sm_idle      = 1'b1 ;
                     // assign next state - only possible is address - if state machine is supposed to stay in idle state
                     // outside signals disable the clock
                     next_state     = S_ADDRESS ;
@@ -581,7 +562,7 @@ begin
                         // wait is still inactive because of registered statuses
                         wait_out = 1'b0 ;
                         // indicate the state
-//                        sm_turn_arround = 1'b1 ;
+                        sm_turn_arround = 1'b1 ;
                         // next state is always idle
                         next_state = S_IDLE ;
                     end

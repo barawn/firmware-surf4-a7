@@ -601,7 +601,6 @@ wire        pci_mux_trdy_out ;
 wire        pci_mux_stop_out ;
 wire [3:0]  pci_mux_cbe_out ;
 wire [31:0] pci_mux_ad_out ;
-wire [31:0] pci_mux_ad_pad_out ;
 wire        pci_mux_ad_load_out ;
 
 wire [31:0] pci_mux_ad_en_out ;
@@ -647,7 +646,7 @@ assign pci_trdy_o       =  pci_mux_trdy_out ;
 assign pci_devsel_o     = pci_mux_devsel_out ;
 assign pci_stop_o       = pci_mux_stop_out ;
 
-assign pci_ad_o          = pci_mux_ad_pad_out ;
+assign pci_ad_o          = pci_mux_ad_out ;
 assign pci_frame_o      = pci_mux_frame_out ;
 assign pci_irdy_o       = pci_mux_irdy_out ;
 assign pci_cbe_o        = pci_mux_cbe_out ;
@@ -1472,7 +1471,6 @@ pci_io_mux pci_io_mux
     .stop_out                   (pci_mux_stop_out),
     .cbe_out                    (pci_mux_cbe_out),
     .ad_out                     (pci_mux_ad_out),
-	 .ad_pad_out					  (pci_mux_ad_pad_out),
     .ad_load_out                (pci_mux_ad_load_out),
 
     .par_out                    (pci_mux_par_out),
@@ -1561,13 +1559,7 @@ wire            parchk_pci_trdy_en_in           =   out_bckp_trdy_en_out ;
 
 wire    [31:0]  parchk_pci_ad_out_in            =   out_bckp_ad_out ;
 wire    [31:0]  parchk_pci_ad_reg_in            =   in_reg_ad_out ;
-// ?! Huh? int_pci_cbe is muxed on out_bckp_cbe_en_out betwene out_bckp_cbe_out and pci_cbe_i:
-// You *never* need to *generate* parity based on pci_cbe_i. The only way par's output matters
-// is if pci_par_en_out is enabled (which is pci_ad_en_in), which is only true if out_bckp_cbe_en_out
-// is high. All this does is create a critical path that is never used: if out_bckp_cbe_en_out is
-// inactive (so cbe_i is used) then pci_par_en_out is low. So just pass out_bckp_cbe
-//wire    [3:0]   parchk_pci_cbe_in_in            =   int_pci_cbe   ;
-wire    [3:0]   parchk_pci_cbe_in_in				=   out_bckp_cbe_out ;
+wire    [3:0]   parchk_pci_cbe_in_in            =   int_pci_cbe   ;
 wire    [3:0]   parchk_pci_cbe_reg_in           =   in_reg_cbe_out ;
 wire    [3:0]   parchk_pci_cbe_out_in           =   out_bckp_cbe_out ;
 wire            parchk_pci_ad_en_in             =   out_bckp_ad_en_out ;

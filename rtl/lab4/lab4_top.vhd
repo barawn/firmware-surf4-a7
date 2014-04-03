@@ -21,6 +21,9 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_arith.ALL;
 use IEEE.STD_LOGIC_unsigned.ALL;
+
+use work.RX_TX_definitions.all;
+
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
@@ -44,7 +47,7 @@ wbc_stb_i : in std_logic;
 wbc_ack_o : out std_logic;		
 wbc_rty_o : out std_logic;			
 wbc_err_o : out std_logic;			
-wbc_sel_i: in std_logic_vector(3 downto 0);
+wbc_sel_i: in std_logic_vector(0 downto 0);
 sys_clk_i : in std_logic;
 pps_i : in std_logic; 
 pps_sysclk_i : in std_logic;
@@ -56,6 +59,8 @@ L4_TX : out std_logic_vector(11 downto 0);
 L4_CLK : out std_logic_vector(11 downto 0);
 -- MONTIMING inputs.
 L4_TIMING : in std_logic_vector(11 downto 0);
+-- WCLK outputs.
+L4_WCLK : out std_logic_vector(11 downto 0);
 -- Write port connections.
 L4A_WR_EN : out std_logic;
 L4A_WR : out std_logic_vector(4 downto 0);
@@ -87,7 +92,7 @@ end lab4_top;
   
 architecture Behavioral of lab4_top is
 
-COMPONENT lab4_ram_new
+COMPONENT lab4_buffer
   PORT (
     clka : IN STD_LOGIC;
     wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
@@ -99,7 +104,7 @@ COMPONENT lab4_ram_new
     doutb : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
   );
 END COMPONENT;
-
+  
 component write_master_SURF  
 port(
 CLK : in std_logic;
@@ -169,11 +174,81 @@ NACK :out std_logic
 );
 end component;
 
+
+component TX_RX_manager is
+port(
+CLK : in std_logic;
+preempt : in std_logic;
+preempt_out : out std_logic;
+do_other_command :in std_logic;
+common_command_OTHERS :in std_logic_vector(7 downto 0);
+LAB4_choice : in std_logic_vector(3 downto 0);
+DAC_address : in std_logic_vector(11 downto 0);
+DAC_value : in std_logic_vector(11 downto 0);
+general_control_value : in std_logic_vector(7 downto 0);
+SPI_N_words : in std_logic_vector(7 downto 0);
+REBOOT_address : in std_logic_vector(7 downto 0);
+TX_do_command : out std_logic_vector(11 downto 0);
+TX_command : out std_logic_vector(7 downto 0);
+TX_arg1 : out std_logic_vector(7 downto 0);
+TX_arg2 : out std_logic_vector(7 downto 0);
+TX_arg3 : out std_logic_vector(7 downto 0);
+RX_done : in std_logic_vector(11 downto 0);
+RX_NACK: in std_logic_vector(11 downto 0);
+others_done : out std_logic
+);
+end component;
+
+
+COMPONENT SPI_mem
+  PORT (
+    clka : IN STD_LOGIC;
+    wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    addra : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+    dina : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+    clkb : IN STD_LOGIC;
+    addrb : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+    doutb : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+  );
+end component;
+ 
+signal logic_one: std_logic := '1';
+signal en_SPI_wr: std_logic;
+signal wea_SPI:  std_logic_vector(0 downto 0);
+
+signal data_SP_wr :  std_logic_vector(7 downto 0);
+signal addr_SP_wr :  std_logic_vector(7 downto 0);
+
+
+signal general_control_value :  std_logic_vector(7 downto 0);
+
+
+signal LAB4_choice: std_logic_vector(3 downto 0);
+signal DAC_address: std_logic_vector(11 downto 0);
+signal DAC_value: std_logic_vector(11 downto 0);
+
+signal LAB4_last_choice_done: std_logic_vector(3 downto 0); --used to indicate that the defacto last command finalized contains
+																				-- info about the LAB4 chip indicated (1111 if a readout is still in progress)
+
+
+signal do_other_command: std_logic;
+
+
 signal do_command: std_logic_vector(11 downto 0);
+signal do_command_READ: std_logic_vector(11 downto 0);
+signal do_command_OTHERS: std_logic_vector(11 downto 0);
+
 type arr_12_7 is array(0 to 11) of std_logic_vector(6 downto 0);
 type arr_12_12 is array(0 to 11) of std_logic_vector(11 downto 0);
 signal common_command : std_logic_vector(7 downto 0);
+signal common_command_READ : std_logic_vector(7 downto 0);
+signal common_command_OTHERS: std_logic_vector(7 downto 0);
+
+signal common_arg1_READ : std_logic_vector(7 downto 0);
+signal common_arg1_OTHERS : std_logic_vector(7 downto 0);
 signal common_arg1 : std_logic_vector(7 downto 0);
+
+
 signal common_arg2 : std_logic_vector(7 downto 0);
 signal common_arg3 : std_logic_vector(7 downto 0);
 signal load_mem_data : std_logic_vector(7 downto 0);
@@ -224,6 +299,7 @@ signal choice_phase_debug : std_logic_vector(4 downto 0) := (others =>'0');
 signal wbc_int_addr : std_logic_vector(16 downto 0);
 
 signal read_done : std_logic;
+signal others_done : std_logic;
 
 signal digitize_address :  std_logic_vector(4 downto 0); -- actual block address, common for all chips
 signal new_window_readout_start :  std_logic; -- to inform histogram that a new window is started now - just for debugging
@@ -253,13 +329,22 @@ signal wren_a :  wren_a_t;
 type dina_t is array(0 to 11) of std_logic_vector(15 downto 0);
 signal dina :  dina_t;
 
-signal sys_clk_b : std_logic;
+
+signal SPI_N_words : std_logic_vector(7 downto 0);
+signal REBOOT_address : std_logic_vector(7 downto 0);
+signal FIRMWARE_ID_value : std_logic_vector(7 downto 0);
+
+signal readout_in_process : std_logic := '0';-- read-related TX/RX (WILKINSON and READOUT)
+signal others_in_process : std_logic := '0'; -- general controls, SPI, reboot. 
+
+
+														
 
 begin
 
- wclk_en_o <= "111111111111";
-
  wbc_int_addr <= wbc_adr_i(18 downto 2);
+
+ wclk_en_o <= "111111111111";
 
 process(wbc_clk_i)
 begin
@@ -270,7 +355,7 @@ if(rising_edge(wbc_clk_i)) then
 	if digitize_load_level = '1' and digitize_load_old = '0' then digitize_load<='1'; end if; -- uses edge - not necessary as it is already a pulse
 	if read_done = '1' then read_done_latch<= '1'; end if; 
 	if((wbc_cyc_i and wbc_stb_i and wbc_we_i) = '1') then
-		if(wbc_int_addr(16)='1') then -- MSb chooses between data memory and commands
+		if(wbc_int_addr(16 downto 15)="10") then -- MSbs choose between data memory and commands
 			case wbc_int_addr(3 downto 0) is -- still discards the 2 LSbs?
 				when "0000" => digitize_load_level<='1'; --  command - digitize and load - might decide to store in different locations later
 									desired_bank <= wbc_dat_i(1 downto 0); -- which bank you want - internally it checks whether it is currently written into and refuses
@@ -281,10 +366,38 @@ if(rising_edge(wbc_clk_i)) then
 																							 -- BEFORE the load_internal_done is set
 				when "0011" =>	data_bank<=wbc_dat_i(0 downto 0); -- command - select the data bank to use (there are 2 now) -- in the future this might be automatic
 --				when "0100" =>	-- this command is actually covered by readout that is self-resetting
-				
+				when "1000" => common_command_OTHERS<= REBOOT; --reboot - works only if no read is in session - make sure triggering is preempted
+								   LAB4_choice<=wbc_dat_i(15 downto 12); -- if "1111" it will broadcast the write
+									REBOOT_address<=wbc_dat_i(7 downto 0); -- only LSbs used?
+								   do_OTHER_command<='1'; 
+				when "1001" => common_command_OTHERS<= DAC_LOAD; --DAC_LOAD - works only if no read is in session - make sure triggering is preempted
+								   LAB4_choice<=wbc_dat_i(15 downto 12); -- if "1111" it will broadcast the write
+									DAC_address<=wbc_dat_i(11 downto 0); -- DAC address in the LSBs
+									DAC_value<=wbc_dat_i(31 downto 20); -- DAC value in  the MSbs
+									do_OTHER_command<='1'; 
+				when "1010" => common_command_OTHERS<= GENERAL_CONTROL; --GENERAL_CONTROL - works only if no read is in session - make sure triggering is preempted
+								   LAB4_choice<=wbc_dat_i(15 downto 12); -- if "1111" it will broadcast the write
+								   general_control_value<=wbc_dat_i(7 downto 0); 
+									do_OTHER_command<='1';
+				when "1011" => common_command_OTHERS<= FIRMWARE_ID; --FIRMWARE_ID - works only if no read is in session - make sure triggering is preempted
+								   LAB4_choice<=wbc_dat_i(15 downto 12); -- in this case broadcast makes no sense
+									do_OTHER_command<='1'; -- requires a write AND a read on the same address 
+				when "1100" => common_command_OTHERS<= SPI_LOAD; --SPI_LOAD - works only if no read is in session - make sure triggering is preempted
+								   LAB4_choice<=wbc_dat_i(15 downto 12); -- if "1111" it will broadcast the write
+									SPI_N_words <=  wbc_dat_i(7 downto 0);  -- used as first agument for SPI load (# bytes)
+									-- needs to connect!!!
+									do_OTHER_command<='1'; -- the "write space" with "11" as MSbs is used to hold 256 bytes for this command -- needs to be initialized before issueing this
+				when "1101" => common_command_OTHERS<= SPI_EXECUTE; --SPI_EXECUTE - works only if no read is in session - make sure triggering is preempted
+								   LAB4_choice<=wbc_dat_i(15 downto 12); -- if "1111" it will broadcast the write
+									SPI_N_words <=  wbc_dat_i(7 downto 0);  -- used as first argument for SPI execute (# bytes to read)
+									do_OTHER_command<='1'; -- note: now the "verify" info about the programming done is not used											
 				when others => NULL;
 			end case;
-		end if;
+				if(wbc_int_addr(16 downto 15)="11") then -- MSbs choose SPI image memory
+					addr_SP_wr<=wbc_int_addr(7 downto 0); -- only 7 bits - 256 SPI bytes at a time
+					data_SP_wr<=wbc_dat_i(7 downto 0); 
+				end if;
+			end if;
 	elsif((wbc_cyc_i and wbc_stb_i and not wbc_we_i) = '1') then
 		if(wbc_int_addr(16)='1') then -- MSb chooses between data memory and commands
 			case wbc_int_addr(3 downto 0) is -- still discards the 2 LSbs?
@@ -296,6 +409,7 @@ if(rising_edge(wbc_clk_i)) then
 																							 -- BEFORE the load_internal_done is set
 				when "0011" =>	wbc_dat_o_c <= x"0000000" & "000" & data_bank; -- command - select the data bank to use (there are 2 now) -- in the future this might be automatic
 				when "0100" =>	wbc_dat_o_c<= (0=> read_done_latch, others => '0'); read_done_latch <= '0'; -- read and resets the read_done latch that indicates last readout is finished	
+				when "1011" => wbc_dat_o_c<= "00000000000000000000" & LAB4_last_choice_done & FIRMWARE_ID_value; --FIRMWARE_ID value: corresponds to the last read - if not finished reading, it will have "1111"
 				when others => NULL;
 			end case;		
 		end if;
@@ -348,7 +462,7 @@ end process;
 addra<= data_bank & common_write_address;
 enb <= wbc_cyc_i and wbc_stb_i and not wbc_adr_i(18);
 gen_lab_data_mem: for i in 0 to 11 generate
-inst_lab_data_mem: lab4_ram_new port map(
+inst_lab_data_mem: lab4_buffer port map(
   clka => sys_clk_i, -- port A is the WRITE port clocked with the system - 100MHz - clock
 --  wea=> wren(i), 
   wea=> wren_a(i), 
@@ -370,8 +484,21 @@ wbc_dat_o <= memdout(conv_integer(wbc_adr_i(17 downto 14))) when '0', --top 4 bi
 -- for 16 bit words
 --wbc_dat_o <= memdout(15 downto 0);
 				
+--SPI memory - dual ported distributed
 
+en_SPI_wr <= wbc_cyc_i and wbc_stb_i and wbc_adr_i(18) and wbc_adr_i(17);
 
+wea_SPI <= (0 => en_SPI_wr);
+SPI_mem_u : SPI_mem
+  PORT MAP (
+    clka => wbc_clk_i, -- write from wbc
+    wea => wea_SPI,
+    addra => addr_SP_wr,
+    dina => data_SP_wr,
+    clkb => sys_clk_i,  -- read from sys
+    addrb => load_mem_addr,
+    doutb => load_mem_data
+  );
  
 L4A_WR_EN <= L4_WR_EN_all(0);
 L4B_WR_EN <= L4_WR_EN_all(1);
@@ -443,6 +570,7 @@ port map(
 CLK => sys_clk_i,
 --start_read
 trigger => digitize_load_sys, -- careful with domain - used in the fast domain, but comes from wbc clock domain... safer to add domain crossing and acks
+others_in_process => '0',
 -- interface with write_master
 --curr_low => curr_low, --superseded by 5 signals below
 --curr_bank => curr_bank,
@@ -454,10 +582,10 @@ low_bank_D => start_read_3,
 held_banks => HOLD, -- need to know which banks to digitize
 desired_bank => desired_bank,
 -- controls to/from TX_command_RX_data
-TX_do_command => do_command,
-TX_command => common_command, --now only read_master issues commands - need to be preempt other blocks to do so (e.g. PCI trying to set DACs, for example).
+TX_do_command => do_command_READ,
+TX_command => common_command_READ, --now only read_master issues commands - need to be preempt other blocks to do so (e.g. PCI trying to set DACs, for example).
 										-- for safety these should be done while vetoing the trigger?
-TX_arg1 => common_arg1,
+TX_arg1 => common_arg1_READ,
 RX_done => done, --when this is issued, either the digitization or the data transfer is over - data writing in local mem is controlled by the TX_command_RX_data
 RX_NACK => NACK,
 read_done => read_done, -- used to indicate that new data is available - should be used to set a parameter in control space for PCI/TURF to poll
@@ -467,25 +595,6 @@ digitize_address => digitize_address -- now used to indicate the block of memory
 );
 
 common_write_address<= digitize_address & save_mem_addr_low(0); -- all the addresses are identical, so use only one of them
-
-sys_clk_b <= not sys_clk_i;
-
-CLK_gen : for ice in 0 to 11 generate
-clk_forward_u : ODDR2
-generic map(
-	DDR_ALIGNMENT => "NONE",
-	INIT => '0',
-	SRTYPE => "SYNC"
-) port map (
-	Q => L4_CLK(ice),
-	C0 => sys_clk_i,
-	C1 => sys_clk_b,
-	CE => '1',
-	D0 => '0',
-	D1 => '1',
-	R => '0',
-	S => '0');
-end generate;
 
 TX_RX_gen : for i in 0 to 11 generate
 TX_command_RX_data_u:	TX_command_RX_data 
@@ -510,6 +619,68 @@ RX => L4_RX(i),
 done => done(i), -- either observe only one, or all of them - if a NACK occurs, retransmit? Possibly add a reset signal to each TX_RX to guarantee "good" start.
 NACK => NACK(i)
 );
+end generate;
+
+process(sys_clk_i)
+begin
+	if rising_edge(sys_clk_i) then
+		if FW_ID_ready(conv_integer(LAB4_choice)) = '1' then
+			FIRMWARE_ID_value<=FW_ID(conv_integer(LAB4_choice));
+			LAB4_last_choice_done <= LAB4_choice;
+		end if;
+	end if;
+end process;
+
+process(others_in_process, do_command_READ, common_command_READ, do_command_OTHERS, common_command_OTHERS)
+begin
+if others_in_process = '1' then 
+		do_command<=do_command_OTHERS;
+		common_command<=common_command_OTHERS;
+		common_arg1 <= common_arg1_OTHERS;
+else -- default - reads
+		do_command<=do_command_READ;
+		common_command<=common_command_READ;
+		common_arg1 <= common_arg1_READ;
+end if;		
+end process;
+
+
+TX_RX_manager_u : TX_RX_manager
+port map
+(CLK => sys_clk_i,
+preempt => readout_in_process,
+preempt_out => others_in_process,
+do_OTHER_command => do_OTHER_command,
+common_command_OTHERS => common_command_OTHERS,
+LAB4_choice => LAB4_choice,
+DAC_address => DAC_address,
+DAC_value => DAC_value,
+general_control_value => general_control_value,
+SPI_N_words => SPI_N_words,
+REBOOT_address => REBOOT_address,
+TX_do_command => do_command_OTHERS,
+--TX_command : out std_logic_vector(7 downto 0);
+TX_arg1 => common_arg1_OTHERS,
+TX_arg2 => common_arg2,
+TX_arg3 => common_arg3,
+RX_done => done,
+RX_NACK => NACK,
+others_done => others_done
+);
+
+CLK_gen : for ice in 0 to 11 generate
+clk_forward_u : ODDR
+generic map(
+	INIT => '0',
+	SRTYPE => "SYNC"
+) port map (
+	Q => L4_CLK(ice),
+	C => sys_clk_i,
+	CE => '1',
+	D1 => '0',
+	D2 => '1',
+	R => '0',
+	S => '0');
 end generate;
 
 end Behavioral;

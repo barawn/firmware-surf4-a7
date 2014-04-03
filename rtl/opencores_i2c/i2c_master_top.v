@@ -211,7 +211,7 @@ module i2c_master_top(
 			end
 		end else begin : DEMUX_NCYCLE
 			always @(posedge wb_clk_i) begin : DEMUX
-				if (wb_cycstb_pipe[WB_LATENCY-1])
+				if (wb_cycstb_pipe[WB_LATENCY])
 					wb_dat_o <= wb_dat_muxed;
 			end
 		end

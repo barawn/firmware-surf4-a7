@@ -35,10 +35,10 @@ module surf4_rfp(
 	wire [18:0] pb_bram_mask	= 19'h76FFF;			// match xxx 0xx1 xxxx xxxx xxxx
 	wire [18:0] rfp_ram_mask 	= 19'h77FFF;			// match xxx 1xxx xxxx xxxx xxxx
 
-	wire pb_port_sel 	= (wbc_adr_i & pb_port_mask) == pb_port_bar;
-	wire i2c_port_sel = (wbc_adr_i & i2c_port_mask) == i2c_port_bar;
-	wire pb_bram_sel 	= (wbc_adr_i & pb_bram_mask) == pb_bram_bar;
-	wire rfp_ram_sel = (wbc_adr_i & rfp_ram_mask) == rfp_ram_bar;
+	wire pb_port_sel 	= (wbc_adr_i & ~pb_port_mask) == pb_port_bar;
+	wire i2c_port_sel = (wbc_adr_i & ~i2c_port_mask) == i2c_port_bar;
+	wire pb_bram_sel 	= (wbc_adr_i & ~pb_bram_mask) == pb_bram_bar;
+	wire rfp_ram_sel = (wbc_adr_i & ~rfp_ram_mask) == rfp_ram_bar;
 
 	wire pb_port_ack;
 	wire pb_port_err = 0;
@@ -62,7 +62,7 @@ module surf4_rfp(
 	wire [11:0] pbAddress;
 	wire pbRomEnable;
 	wire [7:0] pbOutput;
-	wire [7:0] pbInput;
+	reg [7:0] pbInput;
 	wire [7:0] pbPort;
 	wire pbKWrite;
 	wire pbWrite;
@@ -72,6 +72,7 @@ module surf4_rfp(
 	wire pbSleep;
 	wire pbReset;	
 	wire pb_rom_write_protect;
+	
 	kcpsm6 processor(.address(pbAddress),.instruction(pbInstruction),
 						  .bram_enable(pbRomEnable),
 						  .in_port(pbInput),.out_port(pbOutput),.port_id(pbPort),
@@ -118,8 +119,17 @@ module surf4_rfp(
 		end
 	endgenerate
 
+	always @(*) begin
+		case (pbPort[1:0])
+			2'b00: pbInput <= pb_registers[pbPort[6:2]][7:0];
+			2'b01: pbInput <= pb_registers[pbPort[6:2]][15:8];
+			2'b10: pbInput <= pb_registers[pbPort[6:2]][23:16];
+			2'b11: pbInput <= pb_registers[pbPort[6:2]][31:24];
+		endcase
+	end
+
 	always @(posedge clk_i) begin
-		pb_ack <= pb_port_sel;
+		pb_ack <= pb_port_sel && wbc_cyc_i && wbc_stb_i;
 		if (pbWrite && !pbPort[7]) begin // PicoBlaze write access. 
 			case (pbPort)
 				8'h04: begin 

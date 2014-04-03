@@ -5,7 +5,7 @@
 module SURF4_A7(
 		//Local clocks
 		input 	      LOCAL_CLK,
-		input 	      LOCAL_OSC_EN,
+		output			LOCAL_OSC_EN,
 
 		//External trigger - externally 50 ohm terminated - 2.5V bank
 		input 	      EXT_TRIG,
@@ -15,8 +15,7 @@ module SURF4_A7(
 
 		//SSTs and controls
 		output 	      FPGA_SST_N,
-		output 	      FPGA_SST_P,
-		// Note inout: this is a 3-state pin.
+		output 	      FPGA_SST_P,// Note inout: this is a 3-state pin.
 		inout 	      FPGA_SST_SEL,
 		//TURF_derived clock for LABs
 		input 	      FPGA_TURF_SST_N,
@@ -41,7 +40,7 @@ module SURF4_A7(
 		// LAB4 signals - direct connection to LAB4B - MONTIMING inputs, 
 		// Wilkinson clocks and WR signals
 		input [11:0]  L4_TIMING_P,
-		inout [11:0]  L4_TIMING_N,
+		input [11:0]  L4_TIMING_N,
 		output [11:0] L4_WCLK_P,
 		output [11:0] L4_WCLK_N,
 		
@@ -160,16 +159,39 @@ module SURF4_A7(
 	wire [11:0] L4_TX;
 	wire [11:0] L4_CLK;
 	wire [11:0] L4_TIMING;
-	
+	wire [7:0] TD = {8{1'b0}};
 	generate
-		genvar ii;
+		genvar ii,jj;
 		for (ii=0;ii<12;ii=ii+1) begin : ARCH
 			IBUFDS u_rx_ibuf(.I(L4_RX_P[ii]),.IB(L4_RX_N[ii]),.O(L4_RX[ii]));
 			IBUFDS u_timing_ibuf(.I(L4_TIMING_P[ii]),.IB(L4_TIMING_N[ii]),.O(L4_TIMING[ii]));
 			OBUFDS u_tx_obuf(.I(L4_TX[ii]),.O(L4_TX_P[ii]),.OB(L4_TX_N[ii]));
 			OBUFDS u_clk_obuf(.I(L4_CLK[ii]),.O(L4_CLK_P[ii]),.OB(L4_CLK_N[ii]));
 		end
+		for (jj=0;jj<8;jj=jj+1) begin : TURFBUS
+			OBUFDS u_td_obuf(.I(TD[jj]),.OB(TD_N[jj]),.O(TD_P[jj]));
+		end
 	endgenerate
+
+	wire FPGA_TURF_SST;
+	wire FPGA_SST;
+	IBUFDS u_turf_ibuf(.I(FPGA_TURF_SST_P),.IB(FPGA_TURF_SST_N),.O(FPGA_TURF_SST));
+	OBUFDS u_sst_obuf(.I(FPGA_SST),.O(FPGA_SST_P),.OB(FPGA_SST_N));
+	wire SCLK = 0;
+	OBUFDS u_sclk_obuf(.I(SCLK),.O(SCLK_P),.OB(SCLK_N));
+
+	wire PPS;
+	IBUFDS u_pps_ibuf(.I(PPS_P),.IB(PPS_N),.O(PPS));
+
+	// Debugging. There are 2 debugging busses, both 71 bits wide (using 2 block RAMs each).
+	// 2 because we have 2 main clock domains.
+	//
+	// The debugging busses are multiplexed inside the main debug module. Adding more debugging
+	// just means adding more ports to that module (and more select lines on the VIO).
+	wire [70:0] wbc_debug;
+	// global_debug is an 8 bit output async output path (it controls any global behavior that has no clock).
+	// global_debug[0] is used for the WISHBONE clock selection.
+	wire [7:0] global_debug;
 	
    // Internally there are three main busses: the 'control' WISHBONE bus, which has 3 masters and 4 slaves,
    // and the 'data' WISHBONE bus, which has 2 masters and 2 slaves, and the LAB4 I2C bus, which has
@@ -179,9 +201,9 @@ module SURF4_A7(
    // to pull out sensor data - an I2C to WISHBONE slave already exists).
    
    // Control WISHBONE bus clock. Probably the PCI clock.
-   wire 		      wbc_clk = PCI_CLK;
+   wire 		  wbc_clk;
    // Control WISHBONE bus reset.
-   wire      wbc_rst;
+   wire      wb_rst_out = 0;
    //% PPS. In WBC_CLK domain.
    wire      global_pps;
    //% PPS. In Sysclk domain.
@@ -193,12 +215,19 @@ module SURF4_A7(
       
    //% Internal LED control. Can be used by any module.
    wire [11:0] internal_led;
+	assign internal_led = {12{1'b0}};
+	
+	// Right now no one is using them, so 
    //% Internal interrupts. Up to 31 can be used. 1 is used by SPI core.
    wire [30:0] 	    internal_interrupt;
-   //% Incoming SST clock. This is 25 MHz. Boosted to a 100 MHz system clock.
-   wire 	    sst_clock;
+	assign internal_interrupt[30:0] = {31{1'b0}};
+	wire pci_interrupt;
+	
    //% System clock (100 MHz).
    wire 	    sys_clk;
+	//% Local clock (25 MHz).
+	wire 		 local_clk_int;
+	wire		 local_osc_en_int;
    //% WCLK enable
 	wire [11:0] wclk_en;
 	
@@ -209,6 +238,9 @@ module SURF4_A7(
    `WB_DEFINE( turfc, 32, 20, 4);
    // hkmc: HK collector master port WISHBONE bus.
    `WB_DEFINE( hkmc, 32, 20, 4);
+	// wbvio: VIO master port WISHBONE bus.
+	`WB_DEFINE(wbvio, 32, 20, 4);
+	
    // s4_id_ctrl: SURFv4 ID/Control slave port WISHBONE bus.
    `WB_DEFINE( s4_id_ctrl, 32, 16, 4);
    // hksc: HK collector slave port WISHBONE bus.
@@ -272,7 +304,7 @@ module SURF4_A7(
 				.wb_rst_o(wb_rst_in),
 				.wb_rst_i(wb_rst_out),
 				.wb_int_o(wb_int_in),
-				.wb_int_i(wb_int_out),
+				.wb_int_i(pci_interrupt),
 
 				`WBM_CONNECT(pcic, wbm),
 				`WBS_CONNECT(pcid, wbs)
@@ -280,21 +312,35 @@ module SURF4_A7(
 //				.wbm_bte_o(wbm_bte)
 				);
    
+	BUFGCTRL u_wbc_clk_mux(.I0(PCI_CLK),
+								  .I1(local_clk_int),
+								  .S0(!global_debug[0]),
+								  .S1(global_debug[0]),
+								  .IGNORE0(1'b0),
+								  .IGNORE1(1'b0),
+								  .CE0(1'b1),
+								  .CE1(1'b1),
+								  .O(wbc_clk));
+	assign LOCAL_OSC_EN = global_debug[1]; //!(local_osc_en_int || global_debug[0]);
+
    // WISHBONE Control bus interconnect. This is the first stupid version, which does not handle registered WISHBONE transfers,
    // and is just a shared bus interconnect.
    wbc_intercon u_wbc_intercon(	.clk_i(wbc_clk),.rst_i(wbc_rst),
 				`WBS_CONNECT(pcic, pcic),
 				`WBS_CONNECT(turfc, turfc),
 				`WBS_CONNECT(hkmc, hkmc),
+				`WBS_CONNECT(wbvio, wbvio),
 				`WBM_CONNECT(s4_id_ctrl, s4_id_ctrl),
 				`WBM_CONNECT(hksc, hksc),
 				`WBM_CONNECT(rfp, rfp),
-				`WBM_CONNECT(lab4, lab4));
+				`WBM_CONNECT(lab4, lab4),
+				.debug_o(wbc_debug));
    
    // TURFbus. This is the data path back to the TURF.
    // This also needs a slave port definition for the data side bus.
    // Also needs the top-level port connections to the TURFbus.
    turfbus u_turfbus( .wbm_clk_i(wbc_clk),
+				.TCLK_P(TCLK_P),.TCLK_N(TCLK_N),
 		      .wbm_rst_i(wbc_rst),		      
 		      `WBM_CONNECT(turfc, wbm));
    
@@ -310,6 +356,8 @@ module SURF4_A7(
 				 .internal_led_i(internal_led),
 				 // System clock output.
 				 .sys_clk_o(sys_clk),
+				 // Local clock output (25 MHz).
+				 .local_clk_o(local_clk_int),
 				 // PPS generation, in both domains.
 				 // Note that this may be a fake internal PPS
 				 // if no external PPS has been detected.
@@ -335,7 +383,7 @@ module SURF4_A7(
 				 .FP_LED(FP_LED),
 				 // Clock ports.
 				 .LOCAL_CLK(LOCAL_CLK),
-				 .LOCAL_OSC_EN(LOCAL_OSC_EN),
+				 .LOCAL_OSC_EN(local_osc_en_int),
 				 .FPGA_SST_SEL(FPGA_SST_SEL),
 				 .FPGA_SST(FPGA_SST),
 				 .FPGA_TURF_SST(FPGA_TURF_SST),
@@ -426,5 +474,14 @@ module SURF4_A7(
 			 `WBS_CONNECT(i2c_lab4, wb0),
 			 .SDA(L4_SDA),
 			 .SCL(L4_SCL));
-   
+
+	surf4_debug u_debug(.wbc_clk_i(wbc_clk),
+							  .clk0_i(wbc_clk),
+							  .clk1_i(sys_clk),
+							  `WBM_CONNECT(wbvio, wbvio),
+							  .wbc_debug_i(wbc_debug),
+							  .global_debug_o(global_debug));
+
+	assign MON = {5{1'b0}};
+	assign SREQ_neg = 1;
 endmodule

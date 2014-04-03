@@ -38,6 +38,9 @@ port(
 CLK : in std_logic;
 --start_read
 trigger : in std_logic;
+
+others_in_process : in std_logic;
+readout_in_process : out std_logic;
 -- interface with write_master
 --curr_bank : in std_logic_vector(1 downto 0);
 low_bank_A : in std_logic_vector(2 downto 0); -- need to try to see if this indicates the last or the first written and modify the mapping of digitize_address as a consequence 
@@ -86,8 +89,9 @@ if rising_edge(CLK) then
 	read_done <= '0';
 	TX_do_command <= x"000";
 	case state is
-		when IDLE => if trigger = '1' and held_banks(conv_integer(desired_bank)) = '1' then state <= SET_WINDOW; -- this refuses to digitize if writing is still taking place 
+		when IDLE => if trigger = '1' and held_banks(conv_integer(desired_bank)) = '1' and others_in_process = '0' then state <= SET_WINDOW; -- this refuses to digitize if writing is still taking place 
 									bank <= desired_bank; 
+									readout_in_process <='1';
 									case desired_bank is
 									when "00" => 	low <= low_bank_A;-- start from the first after most recent written
 														start_low <= low_bank_A;
@@ -101,20 +105,25 @@ if rising_edge(CLK) then
 														start_low <= low_bank_A;
 									end case;
 						 end if;
+									readout_in_process <='0';
 		when SET_WINDOW => low <= low +1;-- start from the first after most recent written
+									readout_in_process <='1';
 									state <= DIGITIZE;
 		when DIGITIZE => TX_do_command <= x"fff";
 								TX_command<= WILKINSON_CONVERT;
 								TX_arg1 <= "000" & internal_digitize_address;
 								state <= WAIT_FOR_DIGITIZE;
+									readout_in_process <='1';
 		when WAIT_FOR_DIGITIZE => if RX_done(0) = '1' then --looking only at 0 
 											state <= RDOUT; 
 										  elsif RX_NACK(0) = '1' then --retry if NACK. -- still looking only at 0
 											state <= DIGITIZE;
 										  end if;
+									readout_in_process <='1';
 		when RDOUT => TX_do_command <= x"fff";
 						  TX_command<= READOUT;
 						  state <= WAIT_FOR_RDOUT;
+									readout_in_process <='1';
 		when WAIT_FOR_RDOUT => if RX_done(0) = '1' then --looking only at 0 
 											if low = start_low then state <= DONE;
 											else state <= SET_WINDOW;
@@ -122,6 +131,7 @@ if rising_edge(CLK) then
 										  elsif RX_NACK(0) = '1' then --retry if NACK.  -- still looking only at 0
 											state <= RDOUT;
 										  end if;
+									readout_in_process <='1';
 		when DONE => state <= IDLE; read_done<='1';
 		when others => state <= IDLE;
 	end case;

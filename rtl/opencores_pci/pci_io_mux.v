@@ -114,7 +114,6 @@ module pci_io_mux
     trdy_out,
     stop_out,
     cbe_out,
-	 ad_pad_out,
     ad_out,
     ad_load_out,
     ad_en_unregistered_out,
@@ -183,7 +182,6 @@ output          trdy_out ;
 output          stop_out ;
 output [3:0]    cbe_out ;
 output [31:0]   ad_out ;
-output [31:0] 	 ad_pad_out ;
 output          ad_load_out ;
 output          ad_en_unregistered_out ;
 
@@ -211,13 +209,15 @@ input           init_complete_in    ;
 
 wire   [31:0]   temp_ad = tar_ad_en_reg_in ? tar_ad_in : mas_ad_in ;
 
-(* KEEP = "TRUE" *)
-wire [31:0] ad_en_ctrl ;
+wire ad_en_ctrl_low ;
 
-(* KEEP = "TRUE" *)
-wire [31:0] ad_enable_internal = mas_ad_en_in || tar_ad_en_in ;
+wire ad_en_ctrl_mlow ;
 
-// Let's try duplicating these.
+wire ad_en_ctrl_mhigh ;
+
+wire ad_en_ctrl_high ;
+
+wire ad_enable_internal = mas_ad_en_in || tar_ad_en_in ;
 
 pci_io_mux_ad_en_crit ad_en_low_gen
 (
@@ -303,32 +303,18 @@ pci_io_mux_ad_load_crit ad_load_high_gen
     .load_out(ad_load_ctrl_high)
 );
 
-generate
-	genvar i;
-	for (i=0;i<32;i=i+1) begin : AD
-		pci_io_mux_ad_en_crit ad_en_gen
-		(
-			 .ad_en_in       (ad_enable_internal[i]),
-			 .pci_frame_in   (pci_frame_in),
-			 .pci_trdy_in    (pci_trdy_in),
-			 .pci_stop_in    (pci_stop_in),
-			 .ad_en_out      (ad_en_ctrl[i])
-		);
-		pci_out_reg ad_iob
-		(
-		 .reset_in     ( reset_in ),
-		 .clk_in       ( clk_in) ,
-		 .dat_en_in    ( ad_load_ctrl_low ),
-		 .en_en_in     ( 1'b1 ),
-		 .dat_in       ( temp_ad[i] ) ,
-		 .en_in        ( ad_en_ctrl[i] ) ,
-		 .en_out       ( ad_en_out[i] ),
-		 .dat_out      ( ad_out[i] ),
-		 .dat_pad_out	( ad_pad_out[i] )
-		);
-	end
-endgenerate
-/*
+pci_out_reg ad_iob0
+(
+    .reset_in     ( reset_in ),
+    .clk_in       ( clk_in) ,
+    .dat_en_in    ( ad_load_ctrl_low ),
+    .en_en_in     ( 1'b1 ),
+    .dat_in       ( temp_ad[0] ) ,
+    .en_in        ( ad_en_ctrl_low ) ,
+    .en_out       ( ad_en_out[0] ),
+    .dat_out      ( ad_out[0] )
+);
+
 pci_out_reg ad_iob1
 (
     .reset_in     ( reset_in ),
@@ -700,7 +686,7 @@ pci_out_reg ad_iob31
     .en_out       ( ad_en_out[31] ),
     .dat_out      ( ad_out[31] )
 );
-*/
+
 wire [3:0] cbe_load_ctrl = {4{ master_load_in }} ;
 wire [3:0] cbe_en_ctrl   = {4{ cbe_en_in }} ;
 
