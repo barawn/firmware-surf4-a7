@@ -30,8 +30,8 @@ use work.RX_TX_definitions.all;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx primitives in this code.
-library UNISIM;
-use UNISIM.VComponents.all;
+--library UNISIM;
+--use UNISIM.VComponents.all;
 
 entity lab4_top is
 port(
@@ -51,8 +51,6 @@ wbc_sel_i: in std_logic_vector(0 downto 0);
 sys_clk_i : in std_logic;
 pps_i : in std_logic; 
 pps_sysclk_i : in std_logic;
--- WCLK enable outputs.
-wclk_en_o : out std_logic_vector(11 downto 0);
 -- ICE40 connections.
 L4_RX : in std_logic_vector(11 downto 0);
 L4_TX : out std_logic_vector(11 downto 0);
@@ -92,7 +90,7 @@ end lab4_top;
   
 architecture Behavioral of lab4_top is
 
-COMPONENT lab4_buffer
+COMPONENT lab4_ram_new
   PORT (
     clka : IN STD_LOGIC;
     wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
@@ -344,8 +342,6 @@ begin
 
  wbc_int_addr <= wbc_adr_i(18 downto 2);
 
- wclk_en_o <= "111111111111";
-
 process(wbc_clk_i)
 begin
 if(rising_edge(wbc_clk_i)) then
@@ -387,7 +383,7 @@ if(rising_edge(wbc_clk_i)) then
 									SPI_N_words <=  wbc_dat_i(7 downto 0);  -- used as first agument for SPI load (# bytes)
 									-- needs to connect!!!
 									do_OTHER_command<='1'; -- the "write space" with "11" as MSbs is used to hold 256 bytes for this command -- needs to be initialized before issueing this
-				when "1101" => common_command_OTHERS<= SPI_EXECUTE; --SPI_EXECUTE - works only if no read is in session - make sure triggering is preempted
+				when "1100" => common_command_OTHERS<= SPI_EXECUTE; --SPI_EXECUTE - works only if no read is in session - make sure triggering is preempted
 								   LAB4_choice<=wbc_dat_i(15 downto 12); -- if "1111" it will broadcast the write
 									SPI_N_words <=  wbc_dat_i(7 downto 0);  -- used as first argument for SPI execute (# bytes to read)
 									do_OTHER_command<='1'; -- note: now the "verify" info about the programming done is not used											
@@ -409,7 +405,7 @@ if(rising_edge(wbc_clk_i)) then
 																							 -- BEFORE the load_internal_done is set
 				when "0011" =>	wbc_dat_o_c <= x"0000000" & "000" & data_bank; -- command - select the data bank to use (there are 2 now) -- in the future this might be automatic
 				when "0100" =>	wbc_dat_o_c<= (0=> read_done_latch, others => '0'); read_done_latch <= '0'; -- read and resets the read_done latch that indicates last readout is finished	
-				when "1011" => wbc_dat_o_c<= "00000000000000000000" & LAB4_last_choice_done & FIRMWARE_ID_value; --FIRMWARE_ID value: corresponds to the last read - if not finished reading, it will have "1111"
+				when "1011" => wbc_dat_o_c<= LAB4_last_choice_done & FIRMWARE_ID_value; --FIRMWARE_ID value: corresponds to the last read - if not finished reading, it will have "1111"
 				when others => NULL;
 			end case;		
 		end if;
@@ -462,7 +458,7 @@ end process;
 addra<= data_bank & common_write_address;
 enb <= wbc_cyc_i and wbc_stb_i and not wbc_adr_i(18);
 gen_lab_data_mem: for i in 0 to 11 generate
-inst_lab_data_mem: lab4_buffer port map(
+inst_lab_data_mem: lab4_ram_new port map(
   clka => sys_clk_i, -- port A is the WRITE port clocked with the system - 100MHz - clock
 --  wea=> wren(i), 
   wea=> wren_a(i), 
@@ -570,7 +566,6 @@ port map(
 CLK => sys_clk_i,
 --start_read
 trigger => digitize_load_sys, -- careful with domain - used in the fast domain, but comes from wbc clock domain... safer to add domain crossing and acks
-others_in_process => '0',
 -- interface with write_master
 --curr_low => curr_low, --superseded by 5 signals below
 --curr_bank => curr_bank,
@@ -667,21 +662,6 @@ RX_done => done,
 RX_NACK => NACK,
 others_done => others_done
 );
-
-CLK_gen : for ice in 0 to 11 generate
-clk_forward_u : ODDR
-generic map(
-	INIT => '0',
-	SRTYPE => "SYNC"
-) port map (
-	Q => L4_CLK(ice),
-	C => sys_clk_i,
-	CE => '1',
-	D1 => '0',
-	D2 => '1',
-	R => '0',
-	S => '0');
-end generate;
 
 end Behavioral;
 
