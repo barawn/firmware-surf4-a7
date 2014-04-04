@@ -92,7 +92,7 @@ end lab4_top;
   
 architecture Behavioral of lab4_top is
 
-COMPONENT lab4_ram_new
+COMPONENT lab4_buffer
   PORT (
     clka : IN STD_LOGIC;
     wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
@@ -465,7 +465,7 @@ end process;
 addra<= data_bank & common_write_address;
 enb <= wbc_cyc_i and wbc_stb_i and not wbc_adr_i(18);
 gen_lab_data_mem: for i in 0 to 11 generate
-inst_lab_data_mem: lab4_ram_new port map(
+inst_lab_data_mem: lab4_buffer port map(
   clka => sys_clk_i, -- port A is the WRITE port clocked with the system - 100MHz - clock
 --  wea=> wren(i), 
   wea=> wren_a(i), 
