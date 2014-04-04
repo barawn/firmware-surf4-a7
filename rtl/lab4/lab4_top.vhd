@@ -601,7 +601,8 @@ digitize_address => digitize_address -- now used to indicate the block of memory
 common_write_address<= digitize_address & save_mem_addr_low(0); -- all the addresses are identical, so use only one of them
 
 TX_RX_gen : for i in 0 to 11 generate
-TX_command_RX_data_u:	TX_command_RX_data 
+first_instance: if i = 0 generate
+TX_command_RX_data_u_0:	TX_command_RX_data 
 port map(
 CLK => sys_clk_i,
 do_command => do_command(i), --memory gets duplicated x12, so each readout can proceed in parallel
@@ -624,6 +625,32 @@ done => done(i), -- either observe only one, or all of them - if a NACK occurs, 
 NACK => NACK(i)
 );
 end generate;
+other_instance: if i /= 0 generate
+TX_command_RX_data_u_0:	TX_command_RX_data 
+port map(
+CLK => sys_clk_i,
+do_command => do_command(i), --memory gets duplicated x12, so each readout can proceed in parallel
+command => common_command, -- command is always common though - we expect to issue the same command for all chips, or individually choose one chip (for FW programmiong, for example)
+arg1 => common_arg1,
+arg2 => common_arg2,
+arg3 => common_arg3,
+load_mem_data => load_mem_data, -- as FW programming is done separately, use a single memory to write the data.
+load_mem_addr => open,
+save_mem_data_ready => save_mem_data_ready(i), -- used as wren for the individual memories - block position is indicated by 
+save_mem_data => save_mem_data(i),  -- all individual memories
+save_mem_addr => save_mem_addr_low(i), -- all individual memories  - sample position in block
+save_SPI_data => save_SPI_data(i), -- needs to decide where this goes: probably one location only, and this is multiplexed, as we are writing one FW at a time.
+save_SPI_data_ready => save_SPI_data_ready(i), --same as above - only one active all the time.
+FW_ID => FW_ID(i), --same as above - only one active all the time. 
+FW_ID_ready => FW_ID_ready(i), --same as above - only one active all the time.
+TX => L4_TX(i),
+RX => L4_RX(i),
+done => done(i), -- either observe only one, or all of them - if a NACK occurs, retransmit? Possibly add a reset signal to each TX_RX to guarantee "good" start.
+NACK => NACK(i)
+);
+end generate;
+end generate;
+
 
 process(sys_clk_i)
 begin

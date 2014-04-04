@@ -62,11 +62,28 @@ module wbc_intercon_tb;
 	wire hkc_err_i;
 	wire hkc_rty_i;
 
+	reg wbvio_cyc_o = 0;
+	reg wbvio_stb_o = 0;
+	reg wbvio_we_o = 0;
+	reg [19:0] wbvio_adr_o = {20{1'b0}};
+	reg [31:0] wbvio_dat_o = {32{1'b0}};
+	reg [3:0] wbvio_sel_o = {4{1'b0}};
+	wire [31:0] wbvio_dat_i;
+	wire wbvio_ack_i;
+	wire wbvio_err_i;
+	wire wbvio_rty_i;
+
+	reg ack;
 	`WB_DEFINE(s4_id_ctrl, 32, 20, 4);
-	assign s4_id_ctrl_ack_i = s4_id_ctrl_stb_o && s4_id_ctrl_cyc_o;
+	assign s4_id_ctrl_ack_i = ack;
+	always @(posedge clk_i) begin
+		ack <= s4_id_ctrl_stb_o && s4_id_ctrl_cyc_o;
+	end
 	assign s4_id_ctrl_err_i = 0;
 	assign s4_id_ctrl_rty_i = 0;
 	assign s4_id_ctrl_dat_i = {32{1'b0}};
+	
+
 	
 	
 	// Instantiate the Unit Under Test (UUT)
@@ -75,7 +92,8 @@ module wbc_intercon_tb;
 		.rst_i(rst_i),
 		`WBS_CONNECT(pcic, pcic),
 		`WBS_CONNECT(turfc, turfc),
-		`WBS_CONNECT(hkc, hkc),
+		`WBS_CONNECT(hkc, hkmc),
+		`WBS_CONNECT(wbvio, wbvio),
 		`WBM_CONNECT(s4_id_ctrl, s4_id_ctrl)
 	);
 	always begin
@@ -95,7 +113,7 @@ module wbc_intercon_tb;
 		@(posedge clk_i);
 		pcic_cyc_o = 1;
 		pcic_stb_o = 1;
-		pcic_adr_o = 20'h01234;
+		pcic_adr_o = 20'h11234;
 		pcic_dat_o = 32'h12345678;
 		turfc_cyc_o = 1;
 		turfc_stb_o = 1;

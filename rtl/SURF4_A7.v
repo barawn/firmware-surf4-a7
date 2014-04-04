@@ -159,7 +159,8 @@ module SURF4_A7(
 	wire [11:0] L4_TX;
 	wire [11:0] L4_CLK;
 	wire [11:0] L4_TIMING;
-	wire [7:0] TD = {8{1'b0}};
+	wire [7:0] TD;
+	wire [7:0] TD_oe;
 	generate
 		genvar ii,jj;
 		for (ii=0;ii<12;ii=ii+1) begin : ARCH
@@ -169,7 +170,7 @@ module SURF4_A7(
 			OBUFDS u_clk_obuf(.I(L4_CLK[ii]),.O(L4_CLK_P[ii]),.OB(L4_CLK_N[ii]));
 		end
 		for (jj=0;jj<8;jj=jj+1) begin : TURFBUS
-			OBUFDS u_td_obuf(.I(TD[jj]),.OB(TD_N[jj]),.O(TD_P[jj]));
+			OBUFTDS u_td_obuf(.I(TD[jj]),.T(TD_oe[jj]),.OB(TD_N[jj]),.O(TD_P[jj]));
 		end
 	endgenerate
 
@@ -341,7 +342,9 @@ module SURF4_A7(
    // Also needs the top-level port connections to the TURFbus.
    turfbus u_turfbus( .wbm_clk_i(wbc_clk),
 				.TCLK_P(TCLK_P),.TCLK_N(TCLK_N),
-		      .wbm_rst_i(wbc_rst),		      
+		      .wbm_rst_i(wbc_rst),
+				.TD(TD),
+				.TD_oe(TD_oe),
 		      `WBM_CONNECT(turfc, wbm));
    
    // SURF4 ID and Control block. This allows for reading out device and firmware ID registers,

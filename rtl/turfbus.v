@@ -11,12 +11,15 @@ module turfbus( input wbm_clk_i,
 					 input TCLK_P,
 					 input TCLK_N,
 					 output SREQ_neg,
-					 input TREQ_neg
+					 input TREQ_neg,
+					 output [7:0] TD,
+					 output [7:0] TD_oe
     );
 
 	wire TCLK;
 	IBUFDS u_tclk_ibuf(.I(TCLK_P),.IB(TCLK_N),.O(TCLK));
-
+	assign TD = {8{1'b0}};
+	assign TD_oe = {8{1'b1}};
 	assign SREQ_neg = 1;
 	`WB_KILL(wbm, 32, 20, 4);
 endmodule
