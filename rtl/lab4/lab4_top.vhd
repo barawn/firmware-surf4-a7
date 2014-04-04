@@ -47,10 +47,12 @@ wbc_stb_i : in std_logic;
 wbc_ack_o : out std_logic;		
 wbc_rty_o : out std_logic;			
 wbc_err_o : out std_logic;			
-wbc_sel_i: in std_logic_vector(0 downto 0);
+wbc_sel_i: in std_logic_vector(3 downto 0);
 sys_clk_i : in std_logic;
 pps_i : in std_logic; 
 pps_sysclk_i : in std_logic;
+-- WCLK enable outputs.
+wclk_en_o : out std_logic_vector(11 downto 0);
 -- ICE40 connections.
 L4_RX : in std_logic_vector(11 downto 0);
 L4_TX : out std_logic_vector(11 downto 0);
@@ -121,11 +123,15 @@ choice_phase_debug : in std_logic_vector(4 downto 0)
 );
 end component;
 
+
+
 component read_master_SURF 
 port(
 CLK : in std_logic;
 --start_read
 trigger : in std_logic;
+others_in_process : in std_logic;
+readout_in_process : out std_logic;
 -- interface with write_master
 low_bank_A : in std_logic_vector(2 downto 0); -- need to try to see if this indicates the last or the first written and modify the mapping of digitize_address as a consequence 
 low_bank_B : in std_logic_vector(2 downto 0);
@@ -187,7 +193,7 @@ general_control_value : in std_logic_vector(7 downto 0);
 SPI_N_words : in std_logic_vector(7 downto 0);
 REBOOT_address : in std_logic_vector(7 downto 0);
 TX_do_command : out std_logic_vector(11 downto 0);
-TX_command : out std_logic_vector(7 downto 0);
+--TX_command : out std_logic_vector(7 downto 0);
 TX_arg1 : out std_logic_vector(7 downto 0);
 TX_arg2 : out std_logic_vector(7 downto 0);
 TX_arg3 : out std_logic_vector(7 downto 0);
@@ -330,7 +336,7 @@ signal dina :  dina_t;
 
 signal SPI_N_words : std_logic_vector(7 downto 0);
 signal REBOOT_address : std_logic_vector(7 downto 0);
-signal FIRMWARE_ID_value : std_logic_vector(7 downto 0);
+signal FIRMWARE_ID_value : std_logic_vector(11 downto 0);
 
 signal readout_in_process : std_logic := '0';-- read-related TX/RX (WILKINSON and READOUT)
 signal others_in_process : std_logic := '0'; -- general controls, SPI, reboot. 
@@ -341,6 +347,7 @@ signal others_in_process : std_logic := '0'; -- general controls, SPI, reboot.
 begin
 
  wbc_int_addr <= wbc_adr_i(18 downto 2);
+ wclk_en_o <= x"FFF";
 
 process(wbc_clk_i)
 begin
@@ -383,7 +390,7 @@ if(rising_edge(wbc_clk_i)) then
 									SPI_N_words <=  wbc_dat_i(7 downto 0);  -- used as first agument for SPI load (# bytes)
 									-- needs to connect!!!
 									do_OTHER_command<='1'; -- the "write space" with "11" as MSbs is used to hold 256 bytes for this command -- needs to be initialized before issueing this
-				when "1100" => common_command_OTHERS<= SPI_EXECUTE; --SPI_EXECUTE - works only if no read is in session - make sure triggering is preempted
+				when "1101" => common_command_OTHERS<= SPI_EXECUTE; --SPI_EXECUTE - works only if no read is in session - make sure triggering is preempted
 								   LAB4_choice<=wbc_dat_i(15 downto 12); -- if "1111" it will broadcast the write
 									SPI_N_words <=  wbc_dat_i(7 downto 0);  -- used as first argument for SPI execute (# bytes to read)
 									do_OTHER_command<='1'; -- note: now the "verify" info about the programming done is not used											
@@ -405,7 +412,7 @@ if(rising_edge(wbc_clk_i)) then
 																							 -- BEFORE the load_internal_done is set
 				when "0011" =>	wbc_dat_o_c <= x"0000000" & "000" & data_bank; -- command - select the data bank to use (there are 2 now) -- in the future this might be automatic
 				when "0100" =>	wbc_dat_o_c<= (0=> read_done_latch, others => '0'); read_done_latch <= '0'; -- read and resets the read_done latch that indicates last readout is finished	
-				when "1011" => wbc_dat_o_c<= LAB4_last_choice_done & FIRMWARE_ID_value; --FIRMWARE_ID value: corresponds to the last read - if not finished reading, it will have "1111"
+				when "1011" => wbc_dat_o_c<= x"0000" & LAB4_last_choice_done & FIRMWARE_ID_value; --FIRMWARE_ID value: corresponds to the last read - if not finished reading, it will have "1111"
 				when others => NULL;
 			end case;		
 		end if;
@@ -566,6 +573,8 @@ port map(
 CLK => sys_clk_i,
 --start_read
 trigger => digitize_load_sys, -- careful with domain - used in the fast domain, but comes from wbc clock domain... safer to add domain crossing and acks
+others_in_process => others_in_process,
+readout_in_process => readout_in_process,
 -- interface with write_master
 --curr_low => curr_low, --superseded by 5 signals below
 --curr_bank => curr_bank,
