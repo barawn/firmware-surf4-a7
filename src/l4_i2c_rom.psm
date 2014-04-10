@@ -1,0 +1,275 @@
+; LAB4 I2C.
+; 
+CONSTANT	wbPort00,	00
+CONSTANT	wbPort01,	01
+CONSTANT	wbPort02,	02
+CONSTANT	wbPort03,	03
+CONSTANT	wbReqPort, 	02
+CONSTANT	sysPort00,	04
+CONSTANT	sysPort01,	05
+CONSTANT	sysPort02,	06
+CONSTANT	sysPort03,	07
+CONSTANT	sysReqPort,	06
+CONSTANT	i2cStatPort, 	08
+CONSTANT	i2cResultPort,	0B
+
+CONSTANT	wbReqPending,	10
+CONSTANT	sysReqPending, 	10
+CONSTANT	i2cLock,	40
+CONSTANT	i2cUnlock, 	00
+CONSTANT	i2cAck,		20
+CONSTANT	i2cNumAddresses, 08
+CONSTANT	i2cMaxAddress, 	E0
+
+CONSTANT	i2cBase,		80
+
+CONSTANT	i2cBasePrerlo,	80
+CONSTANT	i2cBasePrerhi,	81
+CONSTANT	i2cBaseCtr,	82
+CONSTANT	i2cBaseCr,	84
+
+CONSTANT	i2cOctalAddr,	20	; address of LTC2637 + RnW bit
+CONSTANT	i2cQuadAddr,	22	; address of LTC2635 + RnW bit
+CONSTANT	cmdWriteUpdate, 30	; write + update command (upshift x4)
+CONSTANT	quadMaxLSB,	C4	; max allowable val on quad DAC
+CONSTANT	quadMaxMSB,	09	; max allowable val on quad DAC
+NAMEREG		s8,		scratch_reg
+
+start:		CALL		i2c_setup		
+poll:		INPUT		s0, sysReqPort
+		TEST		s0, sysReqPending
+		JUMP		NZ, handleSysReq
+		INPUT		s0, wbReqPort
+		TEST		s0, wbReqPending
+		JUMP		NZ, handleWbReq
+		JUMP		poll
+; i2cw wants:
+; (s5,s6,s7) to i2c address (s4) on LAB4 (s3)
+; 
+handleSysReq:	INPUT	s7,	sysPort00
+		INPUT	s6,	sysPort01
+		LOAD	s5,	s6
+		AND	s6,	0F
+		SR0	s5
+		SR0	s5
+		SR0	s5
+		SR0	s5				
+		TEST	s5,	08		 ; is this a write to quad DAC?
+		JUMP	NZ,	handleSysReqQuad ; yes
+		LOAD	s4,	i2cOctalAddr 	 ; no: write to LTC2637
+		OR	s5,	cmdWriteUpdate	 ; write and update
+		INPUT	s3,	sysPort02
+		AND	s3,	0F
+		COMPARE	s3,	0C
+		JUMP	NC,	handleSysReqIllegalAddr
+		CALL	i2cw			; perform operation
+						; maybe do something intelligent
+						; later to check error.
+		OUTPUTK	sysReqPending, sysReqPort
+		RETURN
+handleSysReqQuad:
+		LOAD		s4,	i2cQuadAddr
+		COMPARE		s7,	quadMaxLSB
+		COMPARECY 	s6,	quadMaxMSB
+		JUMP		C,	hsrq_jp1
+		LOAD		s7,	quadMaxLSB
+		LOAD		s6,	quadMaxMSB
+hsrq_jp1:	AND		s5,	03
+		OR		s5,	cmdWriteUpdate
+		INPUT		s3,	sysPort02
+		AND		s3,	0F
+		COMPARE		s3,	0C
+		JUMP		NC,	handleSysReqIllegalAddr
+		CALL		i2cw
+		OUTPUTK		sysReqPending, sysReqPort
+		RETURN
+handleSysReqIllegalAddr:
+		; do something smarter later
+		OUTPUTK		sysReqPending, sysReqPort
+		RETURN
+
+
+; i2cw wants:
+; (s5,s6,s7) to i2c address (s4) on LAB4 (s3)
+; 
+handleWbReq:	INPUT	s7,	wbPort00
+		INPUT	s6,	wbPort01
+		LOAD	s5,	s6
+		AND	s6,	0F
+		SR0	s5
+		SR0	s5
+		SR0	s5
+		SR0	s5				
+		TEST	s5,	08		 ; is this a write to quad DAC?
+		JUMP	NZ,	handleWbReqQuad ; yes
+		LOAD	s4,	i2cOctalAddr 	 ; no: write to LTC2637
+		OR	s5,	cmdWriteUpdate	 ; write and update
+		INPUT	s3,	wbPort02
+		AND	s3,	0F
+		COMPARE	s3,	0C
+		JUMP	NC,	handleWbReqIllegalAddr
+		CALL	i2cw			; perform operation
+						; maybe do something intelligent
+						; later to check error.
+		OUTPUTK	wbReqPending, wbReqPort
+		RETURN
+handleWbReqQuad:
+		LOAD		s4,	i2cQuadAddr
+		COMPARE		s7,	quadMaxLSB
+		COMPARECY 	s6,	quadMaxMSB
+		JUMP		C,	hwrq_jp1
+		LOAD		s7,	quadMaxLSB
+		LOAD		s6,	quadMaxMSB
+hwrq_jp1:	AND		s5,	03
+		OR		s5,	cmdWriteUpdate
+		INPUT		s3,	wbPort02
+		AND		s3,	0F
+		COMPARE		s3,	0C
+		JUMP		NC,	handleWbReqIllegalAddr
+		CALL		i2cw
+		OUTPUTK		wbReqPending, wbReqPort
+		RETURN
+handleWbReqIllegalAddr:
+		; do something smarter later
+		OUTPUTK		wbReqPending, wbReqPort
+		RETURN
+
+; Macro:
+; wblock: OUTPUTK i2cLock, i2cStatPort
+; wbunlock: OUTPUTK i2cUnlock, i2cStatPort 
+
+; Write s1 to address s0.
+; Neither s0 nor s1 are touched.
+wbw:		OUTPUT	s1, (s0)
+wbw_poll:	INPUT	scratch_reg,	i2cStatPort
+		TEST	scratch_reg,	i2cAck
+		JUMP	Z, wbw_poll
+		RETURN
+; Read from address s0 (into s1). s1
+; can be used as a scratch reg since we're
+; returning things in it anyway.
+wbr:   	    	INPUT   s1, (s0)
+wbr_poll:	INPUT	s1, i2cStatPort
+		TEST	s1, i2cAck
+		JUMP	Z, wbr_poll
+		INPUT	s1, i2cResultPort
+		RETURN
+; Sets all of the equivalent registers in the I2C cores to the same
+; value (e.g. sets all of PRERlo/PRERhi/CTR)
+; Alters s0.
+wbw_loop:	CALL	wbw
+		ADD	s0, i2cNumAddresses
+		COMPARE	s0, i2cMaxAddress
+		JUMP	C, wbw_loop
+		RETURN	
+; i2c setup. Set prerlo, prerhi, ctr registers.
+i2c_setup:	LOAD	s0, i2cBasePrerhi
+		LOAD	s1, 00
+		CALL	wbw_loop		; prerhi = 0
+		LOAD	s0, i2cBasePrerlo
+		LOAD	s1, 11
+		CALL	wbw_loop		; prerlo = 0x11
+		LOAD	s0, i2cBaseCtr
+		LOAD	s1, C0
+		CALL	wbw_loop		; ctr = 0xC0
+		LOAD	s0, i2cBaseCr
+		LOAD	s1, 01
+		CALL	wbw_loop		; cr = 0x01 (clear IF)
+		RETURN		
+; Write (s5,s6) to I2C address (s4) on LAB4 (s3)
+i2cw:		SL0    s3
+		SL0    s3
+		SL0    s3
+		OR     s3, i2cBase
+		LOAD   s0, s3
+		ADD    s0, 04
+i2cw_loop:	CALL   wbr			; read status
+		TEST   s1, 03			; are TIP and IF zero?
+		JUMP   NZ, i2cw_loop		; no, try again
+		OUTPUTK	   i2cLock, i2cStatPort
+		CALL   wbr			; and reading again
+		TEST   s1, 03			; are TIP and IF still zero?
+		JUMP   Z, i2cw_jp1		; yes! we have the core
+		OUTPUTK	  i2cUnlock, i2cStatPort
+		JUMP   i2cw_loop		; and try again
+i2cw_jp1:	LOAD   s0, s3
+		ADD    s0, 03
+		LOAD   s1, s4			
+		CALL   wbw			; write s4 to TXR
+		LOAD   s0, s3
+		ADD    s0, 04			; and set command register
+		LOAD   s1, 90			; set STA and WR
+		OUTPUTK	  i2cUnlock, i2cStatPort
+		CALL   wbw 			; address should be transmitting
+i2cw_lp1:	CALL   wbr			; now poll IF
+		TEST   s1, 01			; is IF set?
+		JUMP   Z, i2cw_lp1		; no, try again
+		TEST   s1, A0			; is either NACK or AL set?
+		JUMP   NZ, i2cw_err		; yes: this is an err
+		OUTPUTK	  i2cLock, i2cStatPort
+		LOAD   s1, 01			; clear interrupt
+		CALL   wbw 			; write, and lock
+		LOAD   s0, s3
+		ADD    s0, 03
+		LOAD   s1, s5
+		CALL   wbw			; write to TXR
+		OUTPUTK  i2cUnlock, i2cStatPort
+		LOAD   s0, s3
+		ADD    s0, 04
+		LOAD   s1, 10			; set WR
+		CALL   wbw 			; write, and unlock
+i2cw_lp2:	CALL   wbr			; now poll IF
+		TEST   s1, 01			; is IF set?
+		JUMP   Z, i2cw_lp2		; no, try again
+		TEST   s1, A0			; is either NACK or AL set?
+		JUMP   NZ, i2cw_err		; yes: this is an err
+		OUTPUTK i2cLock, i2cStatPort
+		LOAD   s1, 01			; clear interrupt
+		CALL   wbw 			; write, and lock
+		LOAD   s0, s3
+		ADD    s0, 03
+		LOAD   s1, s6			; write second byte...
+		CALL   wbw			; write to TXR
+		OUTPUTK i2cUnlock, i2cStatPort
+		LOAD   s0, s3
+		ADD    s0, 04
+		LOAD   s1, 10			; set WR
+		CALL   wbw 			; write, and unlock
+i2cw_lp3:	CALL   wbr			; now poll IF
+		TEST   s1, 01			; is IF set?
+		JUMP   Z, i2cw_lp3		; no, try again
+		TEST   s1, A0			; is either NACK or AL set?
+		JUMP   NZ, i2cw_err		; yes: this is an err
+		OUTPUTK i2cLock, i2cStatPort
+		LOAD   s1, 01			; clear interrupt
+		CALL   wbw 			; write, and lock
+		LOAD   s0, s3
+		ADD    s0, 03
+		LOAD   s1, s7			; write third byte...
+		CALL   wbw
+		OUTPUTK	i2cUnlock, i2cStatPort
+		LOAD   s0, s3
+		ADD    s0, 04
+		LOAD   s1, 10
+		CALL   wbw
+i2cw_lp4:	CALL   wbr
+		TEST   s1, 01
+		JUMP   Z, i2cw_lp4
+		TEST   s1, A0
+		JUMP   NZ, i2cw_err
+		OUTPUTK i2cLock, i2cStatPort
+		LOAD   s1, 01
+		CALL   wbw
+		LOAD   s1, 40			; set STO bit
+		OUTPUTK i2cUnlock, i2cStatPort
+		CALL   wbw			; and done
+		RETURN
+i2cw_err:	OUTPUTK i2cLock, i2cStatPort
+		LOAD   s1, 01			; clear interrupt
+		CALL   wbw 			; write, and lock
+		LOAD   s1, 40			; set STO bit
+		OUTPUTK i2cUnlock, i2cStatPort
+		CALL   wbw
+		RETURN				; go back to beginning
+				   
+		

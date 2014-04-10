@@ -17,6 +17,10 @@ module surf4_debug(
 		input clk1_i,
 		`WBM_NAMED_PORT(wbvio, 32, 20, 4),
 		input [70:0] wbc_debug_i,
+		input [70:0] ice_debug_i,
+		input [70:0] lab4_i2c_debug_i,
+		input [23:0] i2c_debug_i,
+		input [70:0] rfp_debug_i,
 		output [7:0] global_debug_o
     );
 
@@ -31,6 +35,8 @@ module surf4_debug(
 	wire bridge_go_o = vio_sync_in[53];
 	wire bridge_lock_o = vio_sync_in[54];
 	// vio_sync_in[63:54] are available for debug multiplexing
+	wire [1:0] ila0_sel = vio_sync_in[56:55];
+
 	wire [31:0] bridge_dat_i;
 	wire bridge_done_i;
 	wire bridge_err_i;
@@ -58,9 +64,19 @@ module surf4_debug(
 								 .err_i(wbvio_err_i),
 								 .rty_i(wbvio_rty_i)
 								 );
-	// No multiplexing needed yet.
 	always @(posedge clk0_i) begin
-		ila0_debug <= wbc_debug_i;
+		if (ila0_sel[1:0] == 2'b01) ila0_debug <= rfp_debug_i;
+		else if (ila0_sel[1:0] == 2'b11) begin
+			ila0_debug[50:0] <= lab4_i2c_debug_i[50:0];
+			ila0_debug[51] <= i2c_debug_i[0];
+			ila0_debug[52] <= i2c_debug_i[12];
+			ila0_debug[53] <= i2c_debug_i[1];
+			ila0_debug[54] <= i2c_debug_i[13];
+		end
+		else ila0_debug <= wbc_debug_i;
+	end
+	always @(posedge clk1_i) begin
+		ila1_debug <= ice_debug_i;
 	end
 	wire [35:0] vio_control;
 	wire [35:0] ila0_control;

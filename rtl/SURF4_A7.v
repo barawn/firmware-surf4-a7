@@ -159,8 +159,7 @@ module SURF4_A7(
 	wire [11:0] L4_TX;
 	wire [11:0] L4_CLK;
 	wire [11:0] L4_TIMING;
-	wire [7:0] TD;
-	wire [7:0] TD_oe;
+	wire [7:0] TD = {8{1'b0}};
 	generate
 		genvar ii,jj;
 		for (ii=0;ii<12;ii=ii+1) begin : ARCH
@@ -170,7 +169,7 @@ module SURF4_A7(
 			OBUFDS u_clk_obuf(.I(L4_CLK[ii]),.O(L4_CLK_P[ii]),.OB(L4_CLK_N[ii]));
 		end
 		for (jj=0;jj<8;jj=jj+1) begin : TURFBUS
-			OBUFTDS u_td_obuf(.I(TD[jj]),.T(TD_oe[jj]),.OB(TD_N[jj]),.O(TD_P[jj]));
+			OBUFDS u_td_obuf(.I(TD[jj]),.OB(TD_N[jj]),.O(TD_P[jj]));
 		end
 	endgenerate
 
@@ -193,7 +192,10 @@ module SURF4_A7(
 	// global_debug is an 8 bit output async output path (it controls any global behavior that has no clock).
 	// global_debug[0] is used for the WISHBONE clock selection.
 	wire [7:0] global_debug;
-	
+
+	wire [70:0] lab4_debug;
+	wire [70:0] rfp_debug;
+	wire [70:0] lab4_i2c_debug;
    // Internally there are three main busses: the 'control' WISHBONE bus, which has 3 masters and 4 slaves,
    // and the 'data' WISHBONE bus, which has 2 masters and 2 slaves, and the LAB4 I2C bus, which has
    // 12 slaves and 2 masters.
@@ -342,9 +344,7 @@ module SURF4_A7(
    // Also needs the top-level port connections to the TURFbus.
    turfbus u_turfbus( .wbm_clk_i(wbc_clk),
 				.TCLK_P(TCLK_P),.TCLK_N(TCLK_N),
-		      .wbm_rst_i(wbc_rst),
-				.TD(TD),
-				.TD_oe(TD_oe),
+		      .wbm_rst_i(wbc_rst),		      
 		      `WBM_CONNECT(turfc, wbm));
    
    // SURF4 ID and Control block. This allows for reading out device and firmware ID registers,
@@ -415,7 +415,8 @@ module SURF4_A7(
    surf4_rfp u_rfp(.clk_i(wbc_clk),.rst_i(wbc_rst),
 		   `WBS_CONNECT(rfp, wbc),
 		   `WBM_CONNECT(i2c_rfp, i2c),
-		   .pps_i(global_pps));
+		   .pps_i(global_pps),
+			.debug_o(rfp_debug));
 	
    // LAB4 module. This handles LAB4 control and readouts. This has *three* WISHBONE ports.
    // A slave control, for initialization, commanding, etc.
@@ -423,11 +424,13 @@ module SURF4_A7(
    // A master data, for sending the data out.
    lab4_top u_lab4(.wbc_clk_i(wbc_clk),.wbc_rst_i(wbc_rst),
 		   `WBS_CONNECT(lab4, wbc),
-//		   `WBM_CONNECT(i2c_lab4, i2c),
+		   `WBM_CONNECT(i2c_lab4, i2c),
+			.i2c_debug_o(lab4_i2c_debug),
 		   .sys_clk_i(sys_clk),
 		   .pps_i(global_pps),
 		   .pps_sysclk_i(global_pps_sysclk),
 			.wclk_en_o(wclk_en),
+			.debug_o(lab4_debug),
 		   // ICE40 connections.
 		   .L4_RX(L4_RX),
 		   .L4_TX(L4_TX),
@@ -458,8 +461,8 @@ module SURF4_A7(
 		   .L4K_WR_EN(L4K_WR_EN),
 		   .L4K_WR(L4K_WR),
 		   .L4L_WR_EN(L4L_WR_EN),
-		   .L4L_WR(L4L_WR));
-	`WB_KILL(i2c_lab4, 8, 7, 1);
+		   .L4L_WR(L4L_WR),
+			.HOLD(HOLD)); //LM was missing before
    
    // Notes on the I2C WISHBONE bus:
    // This bus will consists of 12 OpenCores I2C controller modules interconnected via a crossbar switch, to allow both the RFP
@@ -472,17 +475,23 @@ module SURF4_A7(
    // A PicoBlaze might be helpful here. Is this efficient? No, but it is quick, which is what we need.
    wire 	    i2c_clk = wbc_clk;
    wire 	    i2c_rst = 0;
+	wire [23:0] i2c_debug;
    i2c_x12_top u_i2c_x12(.clk_i(i2c_clk),.rst_i(i2c_rst),
 			 `WBS_CONNECT(i2c_rfp, wb1),
 			 `WBS_CONNECT(i2c_lab4, wb0),
 			 .SDA(L4_SDA),
-			 .SCL(L4_SCL));
+			 .SCL(L4_SCL),
+			 .debug_o(i2c_debug));
 
 	surf4_debug u_debug(.wbc_clk_i(wbc_clk),
 							  .clk0_i(wbc_clk),
 							  .clk1_i(sys_clk),
 							  `WBM_CONNECT(wbvio, wbvio),
 							  .wbc_debug_i(wbc_debug),
+							  .ice_debug_i(lab4_debug),
+							  .i2c_debug_i(i2c_debug),
+							  .lab4_i2c_debug_i(lab4_i2c_debug),
+							  .rfp_debug_i(rfp_debug),
 							  .global_debug_o(global_debug));
 
 	assign MON = {5{1'b0}};

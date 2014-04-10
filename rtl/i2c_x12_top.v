@@ -1,23 +1,15 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    16:47:06 02/28/2014 
-// Design Name: 
-// Module Name:    i2c_x12_top 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+////////////////////////////////////////////////////////////////////////////////
+// This file is a part of the Antarctic Impulsive Transient Antenna (ANITA)
+// project, a collaborative scientific effort between multiple institutions. For
+// more information, contact Peter Gorham (gorham@phys.hawaii.edu).
 //
-// Dependencies: 
+// All rights reserved.
 //
-// Revision: 
-// Revision 0.01 - File Created
-// Additional Comments: 
-//
-//////////////////////////////////////////////////////////////////////////////////
+// Author: Patrick Allison, Ohio State University (allison.122@osu.edu)
+// Author:
+// Author:
+////////////////////////////////////////////////////////////////////////////////
 `include "wishbone.vh"
 module i2c_x12_top(
 			input clk_i,
@@ -25,7 +17,8 @@ module i2c_x12_top(
 			`WBS_NAMED_PORT(wb0, 8, 7, 1),
 			`WBS_NAMED_PORT(wb1, 8, 7, 1),
 			inout [11:0] SDA,
-			inout [11:0] SCL
+			inout [11:0] SCL,
+			output [23:0] debug_o
     );
 
 	`WB_DEFINE_VECTOR(i2c, 8, 3, 1, 12);
@@ -50,8 +43,10 @@ module i2c_x12_top(
 			assign SCL[ii] = scl_pad_oen_o[ii] ? 1'bZ : scl_pad_o[ii];
 			assign scl_pad_i[ii] = SCL[ii];
 			assign sda_pad_i[ii] = SDA[ii];
+			assign debug_o[ii] = scl_pad_i;
+			assign debug_o[12+ii] = sda_pad_i;
 			assign i2c_sel_o[ii] = 1'b0;
-			i2c_master_top u_i2c(.scl_pad_i(scl_pad_i[ii]),.scl_pad_o(scl_pad_o[ii]),.scl_padoen_o(scl_pad_oen_o[ii]),
+			i2c_master_top #(.ARST_LVL(1'b1)) u_i2c(.scl_pad_i(scl_pad_i[ii]),.scl_pad_o(scl_pad_o[ii]),.scl_padoen_o(scl_pad_oen_o[ii]),
 										.sda_pad_i(sda_pad_i[ii]),.sda_pad_o(sda_pad_o[ii]),.sda_padoen_o(sda_pad_oen_o[ii]),
 										.wb_clk_i(clk_i),
 										.wb_rst_i(rst_i),
@@ -77,7 +72,8 @@ module i2c_x12_top(
 				// Exactly the same, except we *require* that wb1
 				// is not simultaneously requesting.
 				if (!wb1_cyc_i) wb1_gnt[ii] <= 0;
-				else if (wb1_adr_i[6:3] == ii && wb1_cyc_i && !wb0_cyc_i) wb1_gnt[ii] <= 1;
+				else if (wb1_adr_i[6:3] == ii && wb1_cyc_i && 
+							(!wb0_cyc_i || (wb0_adr_i[6:3] != ii))) wb1_gnt[ii] <= 1;
 				
 				// Here if wb0_cyc_i and wb1_cyc_i are both requesting the same slave,
 				// wb0_gnt[ii] goes high (wb0 wins).

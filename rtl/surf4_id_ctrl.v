@@ -300,7 +300,7 @@ module surf4_id_ctrl(
 
 		assign FPGA_SST_SEL = (clocksel_reg[1]) ? clocksel_reg[0] : 1'bZ;
 		assign LOCAL_OSC_EN = clocksel_reg[2];
-		assign ICE40_RESET = reset_reg[0];
+		assign ICE40_RESET = !reset_reg[0];
 		assign CS_B = !spiss_reg[0];		
 
 		assign LED[0] = (led_oen[0]) ? 1'bZ : led_out[0];

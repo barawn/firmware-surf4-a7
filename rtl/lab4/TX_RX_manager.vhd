@@ -87,7 +87,7 @@ if rising_edge(CLK) then
 						 end if;
 		when DO_DAC_LOAD => TX_arg1<= DAC_address(11 downto 4);-- Mapping according to Patrick
 								  TX_arg2<= DAC_address(3 downto 0) & DAC_value(11 downto 8);-- Mapping according to Patrick									
-								  TX_arg3<= DAC_address(7 downto 0); -- Mapping according to Patrick
+								  TX_arg3<= DAC_value(7 downto 0); -- Mapping according to Patrick
 --								  TX_command<= common_command_OTHERS_latched;
 								  if LAB4_choice = "1111" then
 										TX_do_command_internal <= (others => '1');

@@ -44,10 +44,12 @@ module lab4_buffer(
 				u_ram(.CLKARDCLK(clka),
 						.ENARDEN(wea),
 						.WEA(wea),
+						.ADDRARDADDR(ram_addra),
 						.DIADI(diadi),
 						.CLKBWRCLK(clkb),
 						.ENBWREN(enb),
 						.WEBWE(8'h00),
+						.ADDRBWRADDR(ram_addrb),
 						.DOBDO(dobdo));
 			assign doutb[4*i +: 4] = dobdo[3:0];
 			assign doutb[16 + 4*i +: 4] = dobdo[7:4];

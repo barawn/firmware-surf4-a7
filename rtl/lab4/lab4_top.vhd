@@ -30,8 +30,8 @@ use work.RX_TX_definitions.all;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
+library UNISIM;
+use UNISIM.VComponents.all;
 
 entity lab4_top is
 port(
@@ -48,14 +48,29 @@ wbc_ack_o : out std_logic;
 wbc_rty_o : out std_logic;			
 wbc_err_o : out std_logic;			
 wbc_sel_i: in std_logic_vector(3 downto 0);
+-- I2C WB bus connections
+i2c_dat_o : out std_logic_vector(7 downto 0);
+i2c_dat_i : in std_logic_vector(7 downto 0);
+i2c_adr_o : out std_logic_vector(6 downto 0);
+i2c_cyc_o : out std_logic;
+i2c_stb_o : out std_logic;
+i2c_we_o  : out std_logic;
+i2c_ack_i : in std_logic;
+i2c_err_i : in std_logic;
+i2c_rty_i : in std_logic;
+i2c_sel_o : out std_logic_vector(0 downto 0);
+i2c_debug_o : out std_logic_vector(70 downto 0);
+-- Clock/PPS connections.
 sys_clk_i : in std_logic;
 pps_i : in std_logic; 
 pps_sysclk_i : in std_logic;
 -- WCLK enable outputs.
 wclk_en_o : out std_logic_vector(11 downto 0);
+-- Debug outputs.
+debug_o : out std_logic_vector(70 downto 0);
 -- ICE40 connections.
 L4_RX : in std_logic_vector(11 downto 0);
-L4_TX : out std_logic_vector(11 downto 0);
+L4_TX : inout std_logic_vector(11 downto 0);
 L4_CLK : out std_logic_vector(11 downto 0);
 -- MONTIMING inputs.
 L4_TIMING : in std_logic_vector(11 downto 0);
@@ -95,7 +110,8 @@ architecture Behavioral of lab4_top is
 COMPONENT lab4_buffer
   PORT (
     clka : IN STD_LOGIC;
-    wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    wea : IN STD_LOGIC;
+--    wea : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
     addra : IN STD_LOGIC_VECTOR(12 DOWNTO 0);
     dina : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     clkb : IN STD_LOGIC;
@@ -216,6 +232,36 @@ COMPONENT SPI_mem
   );
 end component;
  
+COMPONENT lab4_i2c
+	PORT (
+		clk_i : IN STD_LOGIC;
+		rst_i : IN STD_LOGIC;
+		cyc_i : IN STD_LOGIC;
+		stb_i : IN STD_LOGIC;
+		we_i  : IN STD_LOGIC;
+		dat_i : IN STD_LOGIC_VECTOR(31 downto 0);
+		dat_o : OUT STD_LOGIC_VECTOR(31 downto 0);
+		ack_o : OUT STD_LOGIC;
+		sysclk_i : IN STD_LOGIC;
+		syswr_i : IN STD_LOGIC;
+		sysdat_i : IN STD_LOGIC_VECTOR(31 downto 0);
+		sysdat_o : OUT STD_LOGIC_VECTOR(31 downto 0);
+		
+		i2c_cyc_o : OUT STD_LOGIC;
+		i2c_stb_o : OUT STD_LOGIC;
+		i2c_we_o : OUT STD_LOGIC;
+		i2c_adr_o : OUT STD_LOGIC_VECTOR(6 downto 0);
+		i2c_dat_o : OUT STD_LOGIC_VECTOR(7 downto 0);
+		i2c_dat_i : IN STD_LOGIC_VECTOR(7 downto 0);
+		i2c_sel_o : OUT STD_LOGIC_VECTOR(0 downto 0);
+		i2c_ack_i : IN STD_LOGIC;		
+		i2c_err_i : IN STD_LOGIC;
+		i2c_rty_i : IN STD_LOGIC;
+
+		debug_o	: OUT STD_LOGIC_VECTOR(70 downto 0)
+	);
+END COMPONENT;
+
 signal logic_one: std_logic := '1';
 signal en_SPI_wr: std_logic;
 signal wea_SPI:  std_logic_vector(0 downto 0);
@@ -321,14 +367,14 @@ signal desired_bank : std_logic_vector(1 downto 0);
 
 signal wbc_dat_o_c :  std_logic_vector(31 downto 0);	
 
-signal wbc_command_delayed :  std_logic; 
+signal wbc_command_delayed :  std_logic_vector(1 downto 0); 
 signal digitize_load_old :  std_logic; 
 signal digitize_load_level :  std_logic; 
 signal read_done_latch :  std_logic; 
 signal enb :  std_logic; 
 
 type wren_a_t is array(0 to 11) of std_logic_vector(0 downto 0);
-signal wren_a :  wren_a_t;
+--signal wren_a :  wren_a_t;
 
 type dina_t is array(0 to 11) of std_logic_vector(15 downto 0);
 signal dina :  dina_t;
@@ -341,24 +387,28 @@ signal FIRMWARE_ID_value : std_logic_vector(11 downto 0);
 signal readout_in_process : std_logic := '0';-- read-related TX/RX (WILKINSON and READOUT)
 signal others_in_process : std_logic := '0'; -- general controls, SPI, reboot. 
 
-
-														
+-- I2C connections
+signal l4_i2c_stb : std_logic;
+signal i2c_data_out : std_logic_vector(31 downto 0);														
 
 begin
 
  wbc_int_addr <= wbc_adr_i(18 downto 2);
  wclk_en_o <= x"FFF";
 
+ l4_i2c_stb <= wbc_stb_i and wbc_int_addr(8);
+
 process(wbc_clk_i)
 begin
 if(rising_edge(wbc_clk_i)) then
+	do_OTHER_command<='0'; 
 	digitize_load <='0';
 	digitize_load_old <= digitize_load_level;
 	digitize_load_level<='0';
 	if digitize_load_level = '1' and digitize_load_old = '0' then digitize_load<='1'; end if; -- uses edge - not necessary as it is already a pulse
 	if read_done = '1' then read_done_latch<= '1'; end if; 
 	if((wbc_cyc_i and wbc_stb_i and wbc_we_i) = '1') then
-		if(wbc_int_addr(16 downto 15)="10") then -- MSbs choose between data memory and commands
+		if(wbc_int_addr(16 downto 15)="10" and wbc_int_addr(8)='0') then -- MSbs choose between data memory and commands
 			case wbc_int_addr(3 downto 0) is -- still discards the 2 LSbs?
 				when "0000" => digitize_load_level<='1'; --  command - digitize and load - might decide to store in different locations later
 									desired_bank <= wbc_dat_i(1 downto 0); -- which bank you want - internally it checks whether it is currently written into and refuses
@@ -396,11 +446,11 @@ if(rising_edge(wbc_clk_i)) then
 									do_OTHER_command<='1'; -- note: now the "verify" info about the programming done is not used											
 				when others => NULL;
 			end case;
-				if(wbc_int_addr(16 downto 15)="11") then -- MSbs choose SPI image memory
-					addr_SP_wr<=wbc_int_addr(7 downto 0); -- only 7 bits - 256 SPI bytes at a time
-					data_SP_wr<=wbc_dat_i(7 downto 0); 
-				end if;
-			end if;
+		end if;
+		if(wbc_int_addr(16 downto 15)="11") then -- MSbs choose SPI image memory
+			addr_SP_wr<=wbc_int_addr(7 downto 0); -- only 7 bits - 256 SPI bytes at a time
+			data_SP_wr<=wbc_dat_i(7 downto 0); 
+		end if;
 	elsif((wbc_cyc_i and wbc_stb_i and not wbc_we_i) = '1') then
 		if(wbc_int_addr(16)='1') then -- MSb chooses between data memory and commands
 			case wbc_int_addr(3 downto 0) is -- still discards the 2 LSbs?
@@ -417,7 +467,7 @@ if(rising_edge(wbc_clk_i)) then
 			end case;		
 		end if;
 	end if;
-	wbc_command_delayed <= wbc_int_addr(16);
+	wbc_command_delayed <= wbc_int_addr(16) & wbc_int_addr(8);
 end if;
 end process;
 
@@ -457,7 +507,7 @@ wren <= save_mem_data_ready; -- from TX_RX controller
 process(wren, save_mem_data)
 begin
 for i in 0 to 11 loop
-wren_a(i)<= (0 => wren(i));
+--wren_a(i)<= (0 => wren(i));
 dina(i) <= "0000" & save_mem_data(i);
 end loop;
 end process;
@@ -467,8 +517,8 @@ enb <= wbc_cyc_i and wbc_stb_i and not wbc_adr_i(18);
 gen_lab_data_mem: for i in 0 to 11 generate
 inst_lab_data_mem: lab4_buffer port map(
   clka => sys_clk_i, -- port A is the WRITE port clocked with the system - 100MHz - clock
---  wea=> wren(i), 
-  wea=> wren_a(i), 
+  wea=> wren(i), -- it is a single bit!!
+--  wea=> wren_a(i), 
   addra => addra, -- input [12 : 0] addra
   dina => dina(i), -- input [15 : 0] dina
   clkb => wbc_clk_i, -- input clkb
@@ -481,7 +531,9 @@ end generate;
 --  for 32 bit words
 with wbc_command_delayed select -- delayed as the output of command readout is synchronously updated at the same time wbc_adr_i(18) becomes 1. 
 										  -- also  for memory readout the address is updated at least one clock cycle before by f the synch update of wbc_ack_o 
-wbc_dat_o <= memdout(conv_integer(wbc_adr_i(17 downto 14))) when '0', --top 4 bits to select the asic
+wbc_dat_o <= memdout(conv_integer(wbc_adr_i(17 downto 14))) when "00", --top 4 bits to select the asic
+				 memdout(conv_integer(wbc_adr_i(17 downto 14))) when "01",
+				 i2c_data_out when "11",
 				 wbc_dat_o_c when others;
 				 
 -- for 16 bit words
@@ -600,6 +652,21 @@ digitize_address => digitize_address -- now used to indicate the block of memory
 
 common_write_address<= digitize_address & save_mem_addr_low(0); -- all the addresses are identical, so use only one of them
 
+CLK_gen : for ice in 0 to 11 generate
+l4_clk_u : ODDR
+generic map(
+	INIT => '0',
+	SRTYPE => "SYNC"
+) port map (
+	Q => L4_CLK(ice),
+	C => sys_clk_i,
+	CE => '1',
+	D1 => '0',
+	D2 => '1',
+	R => '0',
+	S => '0');
+end generate;
+
 TX_RX_gen : for i in 0 to 11 generate
 first_instance: if i = 0 generate
 TX_command_RX_data_u_0:	TX_command_RX_data 
@@ -662,7 +729,7 @@ begin
 	end if;
 end process;
 
-process(others_in_process, do_command_READ, common_command_READ, do_command_OTHERS, common_command_OTHERS)
+process(others_in_process, do_command_READ, common_command_READ, do_command_OTHERS, common_command_OTHERS, common_arg1_OTHERS, common_arg1_READ)
 begin
 if others_in_process = '1' then 
 		do_command<=do_command_OTHERS;
@@ -698,6 +765,40 @@ RX_done => done,
 RX_NACK => NACK,
 others_done => others_done
 );
+
+lab4_i2c_u : lab4_i2c
+port map
+(clk_i => wbc_clk_i,
+ rst_i => '0',
+ sysclk_i => sys_clk_i,
+ cyc_i => wbc_cyc_i,
+ stb_i => l4_i2c_stb,
+ we_i => wbc_we_i,
+ dat_i => wbc_dat_i,
+ dat_o => i2c_data_out,
+ ack_o => open,
+ syswr_i => '0',
+ sysdat_i => x"00000000",
+ sysdat_o => open,
+ 
+ i2c_cyc_o => i2c_cyc_o,
+ i2c_stb_o => i2c_stb_o,
+ i2c_we_o => i2c_we_o,
+ i2c_adr_o => i2c_adr_o,
+ i2c_dat_o => i2c_dat_o,
+ i2c_dat_i => i2c_dat_i,
+ i2c_sel_o => i2c_sel_o,
+ i2c_ack_i => i2c_ack_i,
+ i2c_err_i => i2c_err_i,
+ i2c_rty_i => i2c_rty_i,
+
+ debug_o => i2c_debug_o
+);
+	debug_o(11 downto 0) <= L4_RX;
+	debug_o(23 downto 12) <= L4_TX;
+	debug_o(35 downto 24) <= FIRMWARE_ID_value;
+	debug_o(47 downto 36) <= FW_ID_ready;
+	debug_o(70 downto 48) <= x"00000" & "000";
 
 end Behavioral;
 

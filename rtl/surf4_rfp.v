@@ -6,7 +6,8 @@ module surf4_rfp(
 		input rst_i,
 		`WBS_NAMED_PORT(wbc, 32, 19, 4),
 		`WBM_NAMED_PORT(i2c, 8, 7, 1),
-		input pps_i
+		input pps_i,
+		output [70:0] debug_o
     );
 
 	// We have a 19-bit (8-bit) address space, but we can only use 0x00000-0x5FFFF.
@@ -65,7 +66,8 @@ module surf4_rfp(
 	reg [7:0] pbInput;
 	wire [7:0] pbPort;
 	wire pbKWrite;
-	wire pbWrite;
+	wire pbDWrite;
+	wire pbWrite = (pbKWrite || pbDWrite);
 	wire pbRead;
 	wire pbInterrupt;
 	wire pbInterruptAck;
@@ -76,7 +78,7 @@ module surf4_rfp(
 	kcpsm6 processor(.address(pbAddress),.instruction(pbInstruction),
 						  .bram_enable(pbRomEnable),
 						  .in_port(pbInput),.out_port(pbOutput),.port_id(pbPort),
-						  .write_strobe(pbWrite),.read_strobe(pbRead),.k_write_strobe(pbKWrite),
+						  .write_strobe(pbDWrite),.read_strobe(pbRead),.k_write_strobe(pbKWrite),
 						  .interrupt(pbInterrupt),.interrupt_ack(pbInterruptAck),
 						  .sleep(pbSleep),.reset(pbReset),
 						  .clk(clk_i));
@@ -210,8 +212,8 @@ module surf4_rfp(
 	wire i2c_pb_cyc = pb_i2c[2];
 	wire i2c_pb_stb = pb_i2c[3];
 	wire i2c_pb_we = pb_i2c[4];
-	wire i2c_pb_dat_o = pb_i2c[23:16];
-	wire i2c_pb_adr_o = pb_i2c[14:8];
+	wire [7:0] i2c_pb_dat_o = pb_i2c[23:16];
+	wire [6:0] i2c_pb_adr_o = pb_i2c[14:8];
 	
 	assign i2c_cyc_o = (i2c_wb_gnt && i2c_port_sel) ? wbc_cyc_i : i2c_pb_cyc;
 	assign i2c_stb_o = (i2c_wb_gnt && i2c_port_sel) ? wbc_stb_i : i2c_pb_stb;
@@ -291,4 +293,18 @@ module surf4_rfp(
 	assign wbc_rty_o = muxed_rty;
 	assign wbc_dat_o = muxed_dat_o;
    assign i2c_sel_o = 1'b0;				  
+
+	assign debug_o[0 +: 12] = pbAddress;
+	assign debug_o[12 +: 8] = (pbWrite) ? pbOutput : pbInput;
+	assign debug_o[20] = pbWrite;
+	assign debug_o[21] = pbRead;
+	assign debug_o[22 +: 8] = pbPort;
+	assign debug_o[30 +: 8] = (i2c_we_o) ? i2c_dat_o : i2c_dat_i;
+	assign debug_o[38 +: 7] = i2c_adr_o;
+	assign debug_o[45] = i2c_cyc_o;
+	assign debug_o[46] = i2c_stb_o;
+	assign debug_o[47] = i2c_we_o;
+	assign debug_o[48] = i2c_ack_i;
+	
+	
 endmodule

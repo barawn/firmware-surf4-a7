@@ -324,7 +324,7 @@ case choice_phase_debug is
 --when "10001" => WR_S<=WR_S18;
 --when "10010" => WR_S<=WR_S19;
 --when "10011" => WR_S<=WR_S20;
-when "00000" => WR_S<=WR_S1; --new - with 3.2 and 4.2 Gsa/s
+when "00000" => WR_S<=WR_S1; --new - with 3.2 and 4.2 Gsa/s --Note: Wr_S1_f should not be used - error - keep for legacy
 when "00001" => WR_S<=WR_S1_f;
 when "00010" => WR_S<=WR_S2;
 when "00011" => WR_S<=WR_S2_f;
@@ -344,6 +344,7 @@ when "10000" => WR_S<=WR_S8;
 when "10001" => WR_S<=WR_S8_f;
 when "10010" => WR_S<=WR_S9;
 when "10011" => WR_S<=WR_S9_f;
+
 when others => WR_S<=WR_S1;
 end case;
 end process;

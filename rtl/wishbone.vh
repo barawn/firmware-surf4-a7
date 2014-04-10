@@ -44,12 +44,12 @@
 	wire [y``-1:0] x``_dat_i[ n -1:0];		\
 	wire [y``-1:0] x``_dat_o[ n -1:0]; 		\
 	wire [z``-1:0] x``_adr_o[ n -1:0];		\
-	wire			  x``_cyc_o[ n -1:0];		\
-	wire			  x``_we_o[ n -1:0];			\
-	wire			  x``_stb_o[ n -1:0];		\
-	wire			  x``_ack_i[ n -1:0];		\
-	wire			  x``_rty_i[ n -1:0];		\
-	wire			  x``_err_i[ n -1:0];		\
+	wire [ n -1:0] x``_cyc_o;		\
+	wire [ n -1:0] x``_we_o;		\
+	wire [ n -1:0] x``_stb_o;		\
+	wire [ n -1:0] x``_ack_i;		\
+	wire [ n -1:0] x``_rty_i;		\
+	wire [ n -1:0] x``_err_i;		\
 	wire [w``-1:0]  x``_sel_o[ n -1:0]
 
 // Create a series of named ports for

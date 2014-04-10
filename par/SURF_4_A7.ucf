@@ -332,22 +332,22 @@ NET "pci_trdy" LOC = "V8" | IOSTANDARD = PCI33_3;
 
 
 # TD_N[7:0] are transmitting.
-NET "TD_N<0>" LOC = "AE21" | IOSTANDARD = LVDS_25 | PULLDOWN;
-NET "TD_N<1>" LOC = "AF22" | IOSTANDARD = LVDS_25 | PULLDOWN;
-NET "TD_N<2>" LOC = "AF23" | IOSTANDARD = LVDS_25 | PULLDOWN;
-NET "TD_N<3>" LOC = "AC23" | IOSTANDARD = LVDS_25 | PULLDOWN;
-NET "TD_N<4>" LOC = "AD24" | IOSTANDARD = LVDS_25  | PULLDOWN;
-NET "TD_N<5>" LOC = "AF25" | IOSTANDARD = LVDS_25  | PULLDOWN;
-NET "TD_N<6>" LOC = "AE26" | IOSTANDARD = LVDS_25  | PULLDOWN;
-NET "TD_N<7>" LOC = "AD26" | IOSTANDARD = LVDS_25  | PULLDOWN;
-NET "TD_P<0>" LOC = "AD21" | IOSTANDARD = LVDS_25  | PULLUP;
-NET "TD_P<1>" LOC = "AE22" | IOSTANDARD = LVDS_25  | PULLUP;
-NET "TD_P<2>" LOC = "AE23" | IOSTANDARD = LVDS_25  | PULLUP;
-NET "TD_P<3>" LOC = "AC22" | IOSTANDARD = LVDS_25  | PULLUP;
-NET "TD_P<4>" LOC = "AD23" | IOSTANDARD = LVDS_25  | PULLUP;
-NET "TD_P<5>" LOC = "AF24" | IOSTANDARD = LVDS_25  | PULLUP;
-NET "TD_P<6>" LOC = "AE25" | IOSTANDARD = LVDS_25  | PULLUP;
-NET "TD_P<7>" LOC = "AD25" | IOSTANDARD = LVDS_25  | PULLUP;
+NET "TD_N<0>" LOC = "AE21" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<1>" LOC = "AF22" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<2>" LOC = "AF23" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<3>" LOC = "AC23" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<4>" LOC = "AD24" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<5>" LOC = "AF25" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<6>" LOC = "AE26" | IOSTANDARD = LVDS_25  ;
+NET "TD_N<7>" LOC = "AD26" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<0>" LOC = "AD21" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<1>" LOC = "AE22" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<2>" LOC = "AE23" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<3>" LOC = "AC22" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<4>" LOC = "AD23" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<5>" LOC = "AF24" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<6>" LOC = "AE25" | IOSTANDARD = LVDS_25  ;
+NET "TD_P<7>" LOC = "AD25" | IOSTANDARD = LVDS_25  ;
 # Source-synchronous clock for TD_P/N[7:0];
 NET "SCLK_N" LOC = "AF20"  | IOSTANDARD = LVDS_25;
 NET "SCLK_P" LOC = "AF19"  | IOSTANDARD = LVDS_25;
@@ -392,4 +392,28 @@ NET "MGT1P2_N" LOC = "L18";
 NET "MGT1V_P" LOC = "N12";
 NET "MGT1V_N" LOC = "P11";
 
-NET "u_lab4/load_internal_done" TIG;
+NET "wbc_clk" TNM_NET = "TN_WBC";
+NET "sys_clk" TNM_NET = "TN_SYS";
+
+TIMESPEC TS_FROM_WBC_TO_SYS = FROM TN_WBC TO TN_SYS 15 ns DATAPATHONLY;
+TIMESPEC TS_FROM_SYS_TO_WBC = FROM TN_SYS TO TN_WBC 15 ns DATAPATHONLY;
+
+
+#NET "u_lab4/load_internal_done" TIG;
+#
+##LM: these are for wb-to-sys clock crossing to avoid hold violation- all
+## these signals should be up for long enough in the common operation
+#NET "u_lab4/general_control_value<*>" TIG;
+#NET "u_lab4/DAC_address<*>" TIG;
+#NET "u_lab4/DAC_value<*>" TIG;
+#NET "u_lab4/LAB4_choice<*>" TIG;
+#NET "u_lab4/do_OTHER_command" TIG;
+#NET "u_lab4/common_command_OTHERS<*>" TIG;
+#NET "u_lab4/LAB4_choice<*>" TIG;
+#NET "u_lab4/REBOOT_address<*>" TIG;
+#NET "u_lab4/SPI_N_words<*>" TIG;
+#NET "u_lab4/data_bank_0" TIG;
+#NET "u_lab4/desired_bank<*>" TIG;
+#
+#NET "u_surf4_id_ctrl/reset_reg*" TNM_NET = "TN_ICE40_RESET";
+#TIMESPEC TS_reset_false_path = FROM "TN_ICE40_RESET" TIG;

@@ -167,19 +167,19 @@ begin
   instruction <= data_out_a(17 downto 0);
   data_in_a <= "0000000000000000" & address(11 downto 10);
   --
-  address_b <= bram_adr_i;
+  address_b <= bram_adr_i & "1111";
   data_in_b <= bram_dat_i(17 downto 0);
-  bram_dat_o <= "00000000000000" & data_out_b;
+  bram_dat_o <= data_out_b;
   enable_b <= bram_we_i or bram_rd_i;
   we_b <= "00" & bram_we_i & bram_we_i;
   clk_b <= clk;
-  ack_o <= ack;
+  bram_ack_o <= ack;
 
   ack_process : process (clk)
   begin
 	if (rising_edge(clk)) then
 	   ack <= bram_we_i or bram_rd_i;
-	end if
+	end if;
   end process;
   --
   --
