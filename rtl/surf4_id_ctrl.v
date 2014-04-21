@@ -114,7 +114,8 @@ module surf4_id_ctrl(
 		wire spi_inta_o;
 		wire spi_select = (wb_adr_i[7:4] == 4'h3) && (!wb_adr_i[9]);
 		wire spi_sck;
-
+		wire spi_cyc = wb_cyc_i && spi_select;
+		
 		// Sysclk/Wclk generation.
 		wire wclk_p;
 		wire wclk_n;
@@ -230,9 +231,9 @@ module surf4_id_ctrl(
 		assign mmcm_power_down = pllctrl_reg[2];
 
 		simple_spi_top u_spi(.clk_i(clk_i),
-							  .rst_i(rst_i),
+							  .rst_i(~rst_i),
 							  .inta_o(spi_inta_o),
-							  .cyc_i(wb_cyc_i && spi_select),
+							  .cyc_i(spi_cyc),
 							  .stb_i(wb_stb_i),
 							  .we_i(wb_we_i),
 							  .adr_i(wb_adr_i[3:2]),
