@@ -64,7 +64,7 @@ module lab4_i2c(
 	wire syswr_WBCLK;
 	
 	always @(posedge clk_i) begin
-		if (cyc_i && stb_i && we_i && !wbclk_register) wbclk_register[19:0] <= dat_i[19:0]; 
+		if (cyc_i && stb_i && we_i && !wbclk_register[20]) wbclk_register[19:0] <= dat_i[19:0]; 
 		if (pb_wbclk_ack) wbclk_register[20] <= 0;
 		else if (cyc_i && stb_i && we_i) wbclk_register[20] <= dat_i[20];
 		
@@ -124,8 +124,8 @@ module lab4_i2c(
 	assign pb_registers[1] = sysclk_register;
 	assign pb_registers[2] = pb_i2c;
 	assign pb_registers[3] = pb_i2c;
-	assign pb_wbclk_ack = (pbWrite && (pbPort[3:0] == 4'h2) && pbOutput[5]);
-	assign pb_sysclk_ack = (pbWrite && (pbPort[3:0] == 4'h6) && pbOutput[5]);
+	assign pb_wbclk_ack = (pbWrite && (pbPort[3:0] == 4'h2) && pbOutput[4]);
+	assign pb_sysclk_ack = (pbWrite && (pbPort[3:0] == 4'h6) && pbOutput[4]);
 	
 	always @(posedge clk_i) begin
 		if (pbWrite && (pbPort[3] && (pbPort[1:0] == 2'b00))) pb_i2c[6] <= pbOutput[6];

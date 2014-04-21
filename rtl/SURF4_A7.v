@@ -281,7 +281,7 @@ module SURF4_A7(
 	`PCI_TRIS(pci_perr);
 	`PCI_TRIS(pci_serr);
 	`PCI_TRIS_VECTOR(pci_ad, 32);
-	`PCI_TRIS_VECTOR(pci_cbe, 4);
+	`PCI_TRIS_VECTOR(pci_cbe, 4);						
 
 	// PCI bridge.
 	pci_bridge32 u_pci(.pci_clk_i(PCI_CLK),

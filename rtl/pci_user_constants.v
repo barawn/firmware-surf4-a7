@@ -300,11 +300,11 @@ capable device
 	Xilinx's Vendor_ID is 10EEh and Altera's Vendor_ID is 1172h). Device_ID and Revision_ID should be used
 	together by application.
 -----------------------------------------------------------------------------------------------------------*/
-`define HEADER_VENDOR_ID        16'h1895
-`define HEADER_DEVICE_ID        16'h0001
-`define HEADER_REVISION_ID      8'h01
-`define HEADER_SUBSYS_VENDOR_ID 16'h1895
-`define HEADER_SUBSYS_ID        16'h0001
+`define HEADER_VENDOR_ID        16'h10EE
+`define HEADER_DEVICE_ID        16'hFF01
+`define HEADER_REVISION_ID      8'h00
+`define HEADER_SUBSYS_VENDOR_ID 16'h10EE
+`define HEADER_SUBSYS_ID        16'hFF01
 `define HEADER_MAX_LAT          8'h1a
 `define HEADER_MIN_GNT          8'h08
 
