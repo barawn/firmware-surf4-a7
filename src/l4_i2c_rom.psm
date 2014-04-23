@@ -48,12 +48,19 @@ poll:		INPUT		s0, sysReqPort
 ; 
 handleSysReq:	INPUT	s7,	sysPort00
 		INPUT	s6,	sysPort01
-		LOAD	s5,	s6
-		AND	s6,	0F
-		SR0	s5
-		SR0	s5
-		SR0	s5
-		SR0	s5				
+		LOAD	s5,	00		; zero s5
+		SL0	s7			; shift1
+		SLA	s6
+		SLA	s5
+		SL0	s7			; shift2
+		SLA	s6
+		SLA	s5
+		SL0	s7			; shift3
+		SLA	s6
+		SLA	s5
+		SL0	s7			; shift4
+		SLA	s6
+		SLA	s5
 		TEST	s5,	08		 ; is this a write to quad DAC?
 		JUMP	NZ,	handleSysReqQuad ; yes
 		LOAD	s4,	i2cOctalAddr 	 ; no: write to LTC2637
@@ -82,24 +89,32 @@ hsrq_jp1:	AND		s5,	03
 		JUMP		NC,	handleSysReqIllegalAddr
 		CALL		i2cw
 		OUTPUTK		sysReqPending, sysReqPort
-		RETURN
+		JUMP		poll
 handleSysReqIllegalAddr:
 		; do something smarter later
 		OUTPUTK		sysReqPending, sysReqPort
-		RETURN
+		JUMP		poll
 
 
 ; i2cw wants:
 ; (s5,s6,s7) to i2c address (s4) on LAB4 (s3)
-; 
-handleWbReq:	INPUT	s7,	wbPort00
-		INPUT	s6,	wbPort01
-		LOAD	s5,	s6
-		AND	s6,	0F
-		SR0	s5
-		SR0	s5
-		SR0	s5
-		SR0	s5				
+; The LTC2637 wants:
+; command+addr, d11-d4,{d3-d0,0000}
+handleWbReq:	INPUT	s7,	wbPort00	; get bits 7-0
+		INPUT	s6,	wbPort01	; get bits 11-8, plus the channel select bits
+		LOAD	s5,	00		; zero s5
+		SL0	s7			; shift1
+		SLA	s6
+		SLA	s5
+		SL0	s7			; shift2
+		SLA	s6
+		SLA	s5
+		SL0	s7			; shift3
+		SLA	s6
+		SLA	s5
+		SL0	s7			; shift4
+		SLA	s6
+		SLA	s5
 		TEST	s5,	08		 ; is this a write to quad DAC?
 		JUMP	NZ,	handleWbReqQuad ; yes
 		LOAD	s4,	i2cOctalAddr 	 ; no: write to LTC2637
@@ -112,7 +127,7 @@ handleWbReq:	INPUT	s7,	wbPort00
 						; maybe do something intelligent
 						; later to check error.
 		OUTPUTK	wbReqPending, wbReqPort
-		RETURN
+		JUMP	poll
 handleWbReqQuad:
 		LOAD		s4,	i2cQuadAddr
 		COMPARE		s7,	quadMaxLSB
@@ -128,11 +143,11 @@ hwrq_jp1:	AND		s5,	03
 		JUMP		NC,	handleWbReqIllegalAddr
 		CALL		i2cw
 		OUTPUTK		wbReqPending, wbReqPort
-		RETURN
+		JUMP		poll
 handleWbReqIllegalAddr:
 		; do something smarter later
 		OUTPUTK		wbReqPending, wbReqPort
-		RETURN
+		JUMP		poll				
 
 ; Macro:
 ; wblock: OUTPUTK i2cLock, i2cStatPort
@@ -262,7 +277,12 @@ i2cw_lp4:	CALL   wbr
 		CALL   wbw
 		LOAD   s1, 40			; set STO bit
 		OUTPUTK i2cUnlock, i2cStatPort
-		CALL   wbw			; and done
+		CALL   wbw			;		
+i2cw_lp5:	CALL   wbr			; We now need to poll for the interrupt on the STO bit being set.
+		TEST   s1, 01
+		JUMP   Z, i2cw_lp5
+		LOAD   s1, 01
+		CALL   wbw			; and clear the interrupt on STO, and we're done.
 		RETURN
 i2cw_err:	OUTPUTK i2cLock, i2cStatPort
 		LOAD   s1, 01			; clear interrupt
