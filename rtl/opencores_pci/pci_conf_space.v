@@ -152,6 +152,10 @@ module pci_conf_space
                     ,
                     spoci_scl_oe_o, spoci_sda_i, spoci_sda_oe_o
                 `endif
+					 `ifdef PCI_DISABLE_INTX
+						  ,
+						  disable_intx, interrupt_int
+					 `endif
                 ) ;
 
 
@@ -351,6 +355,10 @@ reg spoci_cs_nack,
 reg [10: 0] spoci_cs_adr   ; 
 reg [ 7: 0] spoci_cs_dat   ;
 `endif
+`ifdef PCI_DISABLE_INTX
+output	disable_intx;
+input		interrupt_int;
+`endif
 
 /*###########################################################################################################
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -386,6 +394,9 @@ PCI CONFIGURATION SPACE HEADER (type 00h) registers
             reg [15: 0] r_subsys_vendor_id  ;
             reg [15: 0] r_subsys_id         ;
 
+`ifdef PCI_DISABLE_INTX
+			reg					command_bit10;
+`endif
 			reg					command_bit8 ;
 			reg					command_bit6 ;
 			reg		[2 : 0]		command_bit2_0 ;
@@ -869,13 +880,29 @@ end
         `ifdef PCI_SPOCI
             or spoci_cs_nack or spoci_cs_write or spoci_cs_read or spoci_cs_adr or spoci_cs_dat
         `endif
+
+			`ifdef PCI_DISABLE_INTX
+				or command_bit10 or interrupt_int
+			`endif
     		)
     begin
     	case (r_conf_address_in[9:2])
     	// PCI header - configuration space
     	8'h0: r_conf_data_out = { r_device_id, r_vendor_id } ;
-    	8'h1: r_conf_data_out = { status_bit15_11, r_status_bit10_9, status_bit8, r_status_bit7, 1'h0, r_status_bit5, r_status_bit4, 
-    								 4'h0, 7'h00, command_bit8, 1'h0, command_bit6, 3'h0, command_bit2_0 } ;
+    	8'h1: r_conf_data_out = { status_bit15_11, r_status_bit10_9, status_bit8, r_status_bit7, 1'h0, r_status_bit5, r_status_bit4,
+`ifdef PCI_DISABLE_INTX
+									 interrupt_int,
+`else
+									 1'b0,
+`endif
+    								 3'h0, 
+									 5'h00, 
+`ifdef PCI_DISABLE_INTX
+									 command_bit10,
+`else
+									 1'b0,
+`endif
+									 1'b0,command_bit8, 1'h0, command_bit6, 3'h0, command_bit2_0 } ;
     	8'h2: r_conf_data_out = { r_class_code, r_revision_id } ;
     	8'h3: r_conf_data_out = { 8'h00, r_header_type, latency_timer, cache_line_size_reg } ;
     	8'h4: 
@@ -1240,6 +1267,9 @@ always@(w_conf_address or
     `ifdef PCI_SPOCI
         or spoci_cs_nack or spoci_cs_write or spoci_cs_read or spoci_cs_adr or spoci_cs_dat
     `endif
+	 `ifdef PCI_DISABLE_INTX
+		  or command_bit10 or interrupt_int
+	 `endif
 		)
 begin
 	case (w_conf_address[9:2])
@@ -1251,7 +1281,19 @@ begin
 	8'h1: // w_reg_select_dec bit 0
 	begin
 		w_conf_data_out = { status_bit15_11, r_status_bit10_9, status_bit8, r_status_bit7, 1'h0, r_status_bit5, r_status_bit4, 
-	 					    4'h0, 7'h00, command_bit8, 1'h0, command_bit6, 3'h0, command_bit2_0 } ;
+`ifdef PCI_DISABLE_INTX
+							 interrupt_int,
+`else
+							 1'b0,
+`endif
+							 3'h0,
+							 5'h00, 
+`ifdef PCI_DISABLE_INTX
+							 command_bit10,
+`else
+							 1'b0,
+`endif							 
+							 1'b0,command_bit8, 1'h0, command_bit6, 3'h0, command_bit2_0 } ;
 		w_reg_select_dec = 57'h000_0000_0000_0001 ;
 	end
 	8'h2:
@@ -1756,6 +1798,9 @@ begin
 	if (reset)
 	begin
 		/*status_bit15_11 ; status_bit8 ;*/ command_bit8 <= 1'h0 ; command_bit6 <= 1'h0 ; command_bit2_0 <= 3'h0 ;
+`ifdef PCI_DISABLE_INTX
+		command_bit10 <= 1'h0;
+`endif
 		latency_timer <= 8'h00 ; cache_line_size_reg <= 8'h00 ;
 		// ALL pci_base address registers are the same as pci_baX registers !
 		interrupt_line <= 8'h00 ;
@@ -1942,6 +1987,10 @@ after this ALWAYS block!!! (for every register bit, there are two D-FF implement
 				begin
 					if (~w_byte_en[1])
 						command_bit8 <= w_conf_data[8] ;
+`ifdef PCI_DISABLE_INTX
+					if (~w_byte_en[1])
+						command_bit10 <= w_conf_data[10] ;
+`endif
 					if (~w_byte_en[0])
 					begin
 						command_bit6 <= w_conf_data[6] ;
@@ -3755,6 +3804,9 @@ reg		interrupt_out;
       else
           sync_command_bit <= meta_command_bit ;
   end
+`ifdef PCI_DISABLE_INTX
+  wire  sync_command_bit10 = command_bit10 ;
+`endif
   wire  sync_command_bit8 = command_bit8 ;
   wire  sync_command_bit6 = command_bit6 ;
   wire  sync_command_bit1 = command_bit2_0[1] ;
@@ -3767,7 +3819,9 @@ assign		perr_response = sync_command_bit6 & pci_init_complete_out ;         // t
 assign		pci_master_enable = sync_command_bit2 & wb_init_complete_out ;      // to WB clock
 assign		memory_space_enable = sync_command_bit1 & pci_init_complete_out ;   // to PCI clock
 assign		io_space_enable = sync_command_bit0 & pci_init_complete_out     ;   // to PCI clock
-
+`ifdef PCI_DISABLE_INTX
+assign		disable_intx = sync_command_bit10 & pci_init_complete_out ;			  // to PCI clock
+`endif
 // if bridge is HOST then write clock is equal to WB clock, and synchronization of outputs has to be done
 	// We don't support cache line sizes smaller that 4 and it must have last two bits zero!!!
 wire	cache_lsize_not_zero = ((cache_line_size_reg[7] || cache_line_size_reg[6] || cache_line_size_reg[5] ||

@@ -322,5 +322,6 @@ capable device
 `ifdef GUEST
 //    `define PCI_CPCI_HS_IMPLEMENT
 //    `define PCI_SPOCI
+`define PCI_DISABLE_INTX
 `endif
 

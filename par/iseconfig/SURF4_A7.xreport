@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <report-views version="2.0" >
  <header>
-  <DateModified>2014-04-21T13:43:39</DateModified>
+  <DateModified>2014-05-02T11:28:17</DateModified>
   <ModuleName>SURF4_A7</ModuleName>
   <SummaryTimeStamp>2014-04-21T13:31:40</SummaryTimeStamp>
-  <SavedFilePath>C:/cygwin/home/barawn/repositories/firmware-surf4-a7/par/iseconfig/SURF4_A7.xreport</SavedFilePath>
-  <ImplementationReportsDirectory>C:/cygwin/home/barawn/repositories/firmware-surf4-a7/working\</ImplementationReportsDirectory>
+  <SavedFilePath>C:/cygwin/home/barawn/repositories/github/firmware-surf4-a7/par/iseconfig/SURF4_A7.xreport</SavedFilePath>
+  <ImplementationReportsDirectory>C:/cygwin/home/barawn/repositories/github/firmware-surf4-a7/working\</ImplementationReportsDirectory>
   <DateInitialized>2014-03-04T13:27:40</DateInitialized>
   <EnableMessageFiltering>true</EnableMessageFiltering>
  </header>

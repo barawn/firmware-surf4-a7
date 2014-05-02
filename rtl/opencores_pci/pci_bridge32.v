@@ -429,7 +429,17 @@ assign pci_rst_o     = pci_reso_pci_rstn_out ;
 assign pci_rst_oe_o  = pci_reso_pci_rstn_en_out ;
 assign wb_rst_o         = pci_reso_rst_o ;
 assign pci_inta_o    = pci_into_pci_intan_out ;
-assign pci_inta_oe_o = pci_into_pci_intan_en_out ;
+`ifdef PCI_DISABLE_INTX
+wire disable_intx;
+`else
+wire disable_intx = 0;
+`endif
+`ifdef ACTIVE_LOW_OE
+assign pci_inta_oe_o = pci_into_pci_intan_en_out || disable_intx;
+`else
+assign pci_inta_oe_o = pci_into_pci_intan_en_out && !disable_intx;
+`endif
+
 assign wb_int_o         = pci_into_int_o ;
 
 // WISHBONE SLAVE UNIT OUTPUTS
@@ -1377,6 +1387,12 @@ pci_conf_space configuration(
                                 .spoci_sda_i    (spoci_sda_i    )  ,
                                 .spoci_sda_oe_o (spoci_sda_oe_o )
                             `endif
+									 
+									 `ifdef PCI_DISABLE_INTX
+										  ,
+										  .disable_intx	(disable_intx 	)	,
+										  .interrupt_int	(pci_inta_o && pci_inta_oe_o )
+									 `endif
                             ) ;
 
 // pci data io multiplexer inputs
