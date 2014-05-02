@@ -179,7 +179,7 @@
 // address masks as well as base addresses!
 // Don't define PCI_AMx to 24'hffff_ff for memory images! Use that just for I/O images.
 `define PCI_AM0 24'hffff_f0
-`define PCI_AM1 24'hffff_ff
+`define PCI_AM1 24'hfff0_00
 `define PCI_AM2 24'hffff_f0
 `define PCI_AM3 24'hffff_f0
 `define PCI_AM4 24'hffff_f0
@@ -189,7 +189,7 @@
 // then IMAGE with that base address points to MEMORY space, othervise it points ti IO space. D
 // Device independent software sets the base addresses acording to MEMORY or IO maping!
 `define PCI_BA0_MEM_IO 1'b0 // considered only when PCI_IMAGE0 is used as general PCI-WB image!
-`define PCI_BA1_MEM_IO 1'b1
+`define PCI_BA1_MEM_IO 1'b0
 `define PCI_BA2_MEM_IO 1'b0
 `define PCI_BA3_MEM_IO 1'b0
 `define PCI_BA4_MEM_IO 1'b0
@@ -300,11 +300,11 @@ capable device
 	Xilinx's Vendor_ID is 10EEh and Altera's Vendor_ID is 1172h). Device_ID and Revision_ID should be used
 	together by application.
 -----------------------------------------------------------------------------------------------------------*/
-`define HEADER_VENDOR_ID        16'h1895
-`define HEADER_DEVICE_ID        16'h0001
-`define HEADER_REVISION_ID      8'h01
-`define HEADER_SUBSYS_VENDOR_ID 16'h1895
-`define HEADER_SUBSYS_ID        16'h0001
+`define HEADER_VENDOR_ID        16'h10EE
+`define HEADER_DEVICE_ID        16'hFF00
+`define HEADER_REVISION_ID      8'h00
+`define HEADER_SUBSYS_VENDOR_ID 16'h10EE
+`define HEADER_SUBSYS_ID        16'hFF00
 `define HEADER_MAX_LAT          8'h1a
 `define HEADER_MIN_GNT          8'h08
 

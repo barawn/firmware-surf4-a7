@@ -1,4 +1,5 @@
 # Output products list for <rfp_ram>
+_xmsgs\pn_parser.xmsgs
 rfp_ram.asy
 rfp_ram.gise
 rfp_ram.ngc

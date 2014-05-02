@@ -140,7 +140,7 @@ module surf4_id_ctrl(
 			if (spi_select) wb_ack_mux <= spi_ack_o;
 			else wb_ack_mux <= internal_ack;
 		end
-		assign wb_ack_o = wb_ack_mux;
+		assign wb_ack_o = wb_ack_mux && wb_cyc_i;
 		assign wb_dat_o = wb_data_out_mux;
 		assign wb_err_o = 0;
 		assign wb_rty_o = 0;

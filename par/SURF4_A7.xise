@@ -412,7 +412,7 @@
     </file>
     <file xil_pn:name="../rtl/Verilog_Library/flag_sync.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="136"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="136"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="26"/>
     </file>
     <file xil_pn:name="ipcore_dir/rfp_ram.xise" xil_pn:type="FILE_COREGENISE">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
@@ -494,7 +494,7 @@
     <file xil_pn:name="../rtl/opencores_i2c/i2c_master_defines.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_pci/timescale.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_pci/pci_constants.v" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/pci_user_constants.v" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/opencores_pci/pci_user_constants.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/opencores_pci/bus_commands.v" xil_pn:type="FILE_VERILOG"/>
   </autoManagedFiles>
 
