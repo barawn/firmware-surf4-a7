@@ -107,8 +107,8 @@
 `define FPGA
 `define XILINX
 
-//`define WB_RAM_DONT_SHARE
-//`define PCI_RAM_DONT_SHARE
+`define WB_RAM_DONT_SHARE
+`define PCI_RAM_DONT_SHARE
 
 `ifdef FPGA
     `ifdef XILINX

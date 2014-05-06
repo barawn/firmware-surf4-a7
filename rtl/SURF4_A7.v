@@ -196,6 +196,8 @@ module SURF4_A7(
 	wire [70:0] lab4_debug;
 	wire [70:0] rfp_debug;
 	wire [70:0] lab4_i2c_debug;
+	
+	wire [70:0] pci_debug;
    // Internally there are three main busses: the 'control' WISHBONE bus, which has 3 masters and 4 slaves,
    // and the 'data' WISHBONE bus, which has 2 masters and 2 slaves, and the LAB4 I2C bus, which has
    // 12 slaves and 2 masters.
@@ -314,7 +316,41 @@ module SURF4_A7(
 //				.wbm_cti_o(wbm_cti),
 //				.wbm_bte_o(wbm_bte)
 				);
+
+	reg [31:0] pci_debug_data = {32{1'b0}};
+	reg [19:0] pci_debug_adr = {20{1'b0}};
+	reg [3:0] pci_debug_sel = {4{1'b0}};
+	reg pci_debug_cyc = 0;
+	reg pci_debug_stb = 0;
+	reg pci_debug_ack = 0;
+	reg pci_debug_we = 0;
+	reg pci_debug_err = 0;
+	reg pci_debug_rty = 0;
+	
+	always @(posedge wbc_clk) begin
+		if (pcic_we_o) pci_debug_data <= pcic_dat_o;
+		else pci_debug_data <= pcic_dat_i;
+		
+		pci_debug_adr <= pcic_adr_o;
+		pci_debug_cyc <= pcic_cyc_o;
+		pci_debug_sel <= pcic_sel_o;
+		pci_debug_stb <= pcic_stb_o;
+		pci_debug_we <= pcic_we_o;
+		pci_debug_ack <= pcic_ack_i;
+		pci_debug_err <= pcic_err_i;
+		pci_debug_rty <= pcic_rty_i;
+	end
    
+	assign pci_debug[0 +: 32] = pci_debug_data;
+	assign pci_debug[32 +: 20] = pci_debug_adr;
+	assign pci_debug[52 +: 4] = pci_debug_sel;
+	assign pci_debug[56] = pci_debug_cyc;
+	assign pci_debug[57] = pci_debug_stb;
+	assign pci_debug[58] = pci_debug_we;
+	assign pci_debug[59] = pci_debug_ack;
+	assign pci_debug[60] = pci_debug_err;
+	assign pci_debug[61] = pci_debug_rty;	
+	
 	BUFGCTRL u_wbc_clk_mux(.I0(PCI_CLK),
 								  .I1(local_clk_int),
 								  .S0(!global_debug[0]),
@@ -487,7 +523,7 @@ module SURF4_A7(
 							  .clk0_i(wbc_clk),
 							  .clk1_i(sys_clk),
 							  `WBM_CONNECT(wbvio, wbvio),
-							  .wbc_debug_i(wbc_debug),
+							  .wbc_debug_i(pci_debug),
 							  .ice_debug_i(lab4_debug),
 							  .i2c_debug_i(i2c_debug),
 							  .lab4_i2c_debug_i(lab4_i2c_debug),
