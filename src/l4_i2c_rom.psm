@@ -29,7 +29,7 @@ CONSTANT	i2cBaseCtr,	82
 CONSTANT	i2cBaseCr,	84
 
 CONSTANT	i2cOctalAddr,	20	; address of LTC2637 + RnW bit
-CONSTANT	i2cQuadAddr,	22	; address of LTC2635 + RnW bit
+CONSTANT	i2cQuadAddr,	24	; address of LTC2635 + RnW bit
 CONSTANT	cmdWriteUpdate, 30	; write + update command (upshift x4)
 CONSTANT	quadMaxLSB,	C4	; max allowable val on quad DAC
 CONSTANT	quadMaxMSB,	09	; max allowable val on quad DAC

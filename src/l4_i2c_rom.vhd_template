@@ -139,13 +139,7 @@ entity {name} is
     Port (      address : in std_logic_vector(11 downto 0);
             instruction : out std_logic_vector(17 downto 0);
                  enable : in std_logic;
-                    clk : in std_logic;
-		    bram_adr_i : in std_logic_vector(9 downto 0);
-		    bram_dat_o : out std_logic_vector(17 downto 0);
-		    bram_dat_i : in std_logic_vector(17 downto 0);
-		    bram_we_i : in std_logic;
-		    bram_rd_i : in std_logic;
-		    bram_ack_o : out std_logic);
+                    clk : in std_logic);
     end {name};
 --
 architecture low_level_definition of {name} is
@@ -159,7 +153,6 @@ signal data_out_b : std_logic_vector(17 downto 0);
 signal   enable_b : std_logic;
 signal      clk_b : std_logic;
 signal       we_b : std_logic_vector(3 downto 0);
-signal	     ack  : std_logic;
 --
 begin
 --
@@ -167,20 +160,11 @@ begin
   instruction <= data_out_a(17 downto 0);
   data_in_a <= "0000000000000000" & address(11 downto 10);
   --
-  address_b <= bram_adr_i & "1111";
-  data_in_b <= bram_dat_i(17 downto 0);
-  bram_dat_o <= data_out_b;
-  enable_b <= bram_we_i or bram_rd_i;
-  we_b <= "00" & bram_we_i & bram_we_i;
-  clk_b <= clk;
-  bram_ack_o <= ack;
-
-  ack_process : process (clk)
-  begin
-	if (rising_edge(clk)) then
-	   ack <= bram_we_i or bram_rd_i;
-	end if;
-  end process;
+  address_b <= "11111111111111";
+  data_in_b <= data_out_b(17 downto 0);
+  enable_b <= '0';
+  we_b <= "0000";
+  clk_b <= '0';
   --
   --
   -- 
